@@ -1,19 +1,24 @@
 import "mocha"
 import { assert } from "chai"
-import { tokenize } from "./index"
+import { tokenize, TokenError } from "./index"
 import { toArray } from "@ts-common/iterator"
 
 describe("tokenize", () => {
     it("empty", () => {
-        const result = toArray(tokenize("", () => {})) as any[]
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("", e => errors.push(e))) as any[]
         assert.sameMembers(result, [])
+        assert.equal(errors.length, 0)
     })
     it("spaces", () => {
-        const result = toArray(tokenize("   \t\n   ", () => {})) as any[]
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("   \t\n   ", e => errors.push(e))) as any[]
         assert.sameMembers(result, [])
+        assert.equal(errors.length, 0)
     })
     it("string", () => {
-        const result = toArray(tokenize(" \"xxx\"   ", () => {}))
+        const errors: TokenError[] = []
+        const result = toArray(tokenize(" \"xxx\"   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -22,9 +27,11 @@ describe("tokenize", () => {
         assert.equal(token.value, "xxx")
         assert.equal(token.position.line, 0)
         assert.equal(token.position.column, 1)
+        assert.equal(errors.length, 0)
     })
     it("stringEscape", () => {
-        const result = toArray(tokenize(" \n  \"xx\\\"x\"   ", () => {}))
+        const errors: TokenError[] = []
+        const result = toArray(tokenize(" \n  \"xx\\\"x\"   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -33,17 +40,21 @@ describe("tokenize", () => {
         assert.equal(token.value, "xx\"x")
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 2)
+        assert.equal(errors.length, 0)
     })
     it("symbol", () => {
-        const result = toArray(tokenize(" \r\n\t  {   ", () => {}))
+        const errors: TokenError[] = []
+        const result = toArray(tokenize(" \r\n\t  {   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
         assert.equal(token.kind, "{")
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 3)
+        assert.equal(errors.length, 0)
     })
     it("true and false", () => {
-        const result = toArray(tokenize(" \r\n\n\t   true  false ", () => {}))
+        const errors: TokenError[] = []
+        const result = toArray(tokenize(" \r\n\n\t   true  false ", e => errors.push(e)))
         assert.equal(result.length, 2)
         const token0 = result[0]
         if (token0.kind !== "value") {
@@ -59,10 +70,11 @@ describe("tokenize", () => {
         assert.equal(token1.position.line, 2)
         assert.equal(token1.position.column, 10)
         assert.isFalse(token1.value)
+        assert.equal(errors.length, 0)
     })
     it("symbol and number", () => {
-        const result = toArray(tokenize("-234,56.78", () => {}))
-        console.log(result)
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("-234,56.78", e => errors.push(e)))
         assert.equal(result.length, 3)
         const token0 = result[0]
         if (token0.kind !== "value") {
@@ -82,5 +94,6 @@ describe("tokenize", () => {
         assert.equal(token2.position.line, 0)
         assert.equal(token2.position.column, 5)
         assert.equal(token2.value, 56.78)
+        assert.equal(errors.length, 0)
     })
 })

@@ -34,7 +34,7 @@ interface JsonValueToken extends JsonTokenBase {
 
 type JsonToken = JsonSymbolToken|JsonValueToken
 
-interface TokenError {
+export interface TokenError {
     readonly position: FilePosition
     readonly value: string
 }
@@ -57,7 +57,7 @@ const escapeMap: EscapeMap = {
     "n": "\n",
 }
 
-export const tokenize = (s: string, _: (error: TokenError) => void): Iterable<JsonToken> => {
+export const tokenize = (s: string, reportError: (error: TokenError) => void): Iterable<JsonToken> => {
     function *iterator(): Iterator<JsonToken> {
         const enum State { WhiteSpace, String, StringEscape }
         let line = 0
@@ -80,7 +80,7 @@ export const tokenize = (s: string, _: (error: TokenError) => void): Iterable<Js
             }
             const number = parseFloat(buffer)
             if (number === NaN) {
-                // report an error
+                reportError({ position: bufferPosition, value: buffer })
                 return createValueToken(buffer)
             }
             return createValueToken(number)
@@ -112,7 +112,7 @@ export const tokenize = (s: string, _: (error: TokenError) => void): Iterable<Js
                     } else if (c === "\\") {
                         state = State.StringEscape
                     } else if (isControl(c)) {
-                        // TODO: report an error
+                        reportError({ position: position(), value: c })
                     } else {
                         buffer += c
                     }
@@ -120,7 +120,7 @@ export const tokenize = (s: string, _: (error: TokenError) => void): Iterable<Js
                 case State.StringEscape:
                     const e = escapeMap[c]
                     if (e === undefined) {
-                        // TODO: report an error
+                        reportError({ position: position(), value: c })
                         buffer += c
                     } else {
                         buffer += e
@@ -141,7 +141,7 @@ export const tokenize = (s: string, _: (error: TokenError) => void): Iterable<Js
                 break
             case State.String:
             case State.StringEscape:
-                // report error
+                reportError({ position: bufferPosition, value: buffer })
                 yield { position: bufferPosition, kind: "value", value: buffer }
                 break
         }
