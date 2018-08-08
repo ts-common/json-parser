@@ -116,4 +116,68 @@ describe("tokenize", () => {
         assert.equal(token1.value, "-234")
         assert.equal(errors.length, 0)
     })
+    it("invalid number", () => {
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("-+123e+56", e => errors.push(e)))
+
+        assert.equal(result.length, 1)
+
+        const token0 = result[0]
+        if (token0.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token0.position.line, 0)
+        assert.equal(token0.position.column, 0)
+        assert.equal(token0.value, "-+123e+56")
+
+        assert.equal(errors.length, 1)
+    })
+    it("control character", () => {
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("\"\n\"", e => errors.push(e)))
+
+        assert.equal(result.length, 1)
+
+        const token0 = result[0]
+        if (token0.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token0.position.line, 0)
+        assert.equal(token0.position.column, 0)
+        assert.equal(token0.value, "\n")
+
+        assert.equal(errors.length, 1)
+    })
+    it("invalid escape", () => {
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("\"\\a\"", e => errors.push(e)))
+
+        assert.equal(result.length, 1)
+
+        const token0 = result[0]
+        if (token0.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token0.position.line, 0)
+        assert.equal(token0.position.column, 0)
+        assert.equal(token0.value, "a")
+
+        assert.equal(errors.length, 1)
+    })
+    it("end of file", () => {
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("\"xyz", e => errors.push(e)))
+
+        assert.equal(result.length, 1)
+
+        const token0 = result[0]
+        if (token0.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token0.position.line, 0)
+        assert.equal(token0.position.column, 0)
+        assert.equal(token0.value, "xyz")
+
+        assert.equal(errors.length, 1)
+    })
 })

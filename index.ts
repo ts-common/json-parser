@@ -34,9 +34,16 @@ interface JsonValueToken extends JsonTokenBase {
 
 type JsonToken = JsonSymbolToken|JsonValueToken
 
+type ErrorMessage =
+    "invalid token"|
+    "invalid symbol"|
+    "invalid escape symbol"|
+    "unexpected end of file"
+
 export interface TokenError {
     readonly position: FilePosition
     readonly value: string
+    readonly message: ErrorMessage
 }
 
 const isControl = (c: string): boolean => {
@@ -79,8 +86,8 @@ export const tokenize = (s: string, reportError: (error: TokenError) => void): I
                 case "null": return createValueToken(null)
             }
             const number = parseFloat(buffer)
-            if (number === NaN) {
-                reportError({ position: bufferPosition, value: buffer })
+            if (isNaN(number)) {
+                reportError({ position: bufferPosition, value: buffer, message: "invalid token" })
                 return createValueToken(buffer)
             }
             return createValueToken(number)
@@ -111,16 +118,25 @@ export const tokenize = (s: string, reportError: (error: TokenError) => void): I
                         state = State.WhiteSpace
                     } else if (c === "\\") {
                         state = State.StringEscape
-                    } else if (isControl(c)) {
-                        reportError({ position: position(), value: c })
                     } else {
+                        if (isControl(c)) {
+                            reportError({
+                                position: position(),
+                                value: c,
+                                message: "invalid symbol"
+                            })
+                        }
                         buffer += c
                     }
                     break
                 case State.StringEscape:
                     const e = escapeMap[c]
                     if (e === undefined) {
-                        reportError({ position: position(), value: c })
+                        reportError({
+                            position: position(),
+                            value: c,
+                            message: "invalid escape symbol",
+                        })
                         buffer += c
                     } else {
                         buffer += e
@@ -141,7 +157,11 @@ export const tokenize = (s: string, reportError: (error: TokenError) => void): I
                 break
             case State.String:
             case State.StringEscape:
-                reportError({ position: bufferPosition, value: buffer })
+                reportError({
+                    position: bufferPosition,
+                    value: buffer,
+                    message: "unexpected end of file"
+                })
                 yield { position: bufferPosition, kind: "value", value: buffer }
                 break
         }
