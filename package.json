@@ -32,8 +32,16 @@
   },
   "homepage": "https://github.com/ts-common/json-parser#readme",
   "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.5",
+    "chai": "^4.1.2",
     "mocha": "^5.2.0",
     "nyc": "^12.0.2",
     "typescript": "^3.0.1"
+  },
+  "dependencies": {
+    "@ts-common/iterator": "0.0.30",
+    "@ts-common/json": "0.0.10",
+    "@ts-common/string-map": "0.0.6"
   }
 }
