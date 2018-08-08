@@ -72,7 +72,7 @@ describe("tokenize", () => {
         assert.isFalse(token1.value)
         assert.equal(errors.length, 0)
     })
-    it("symbol and number", () => {
+    it("symbol and numbers", () => {
         const errors: TokenError[] = []
         const result = toArray(tokenize("-234,56.78", e => errors.push(e)))
         assert.equal(result.length, 3)
@@ -94,6 +94,26 @@ describe("tokenize", () => {
         assert.equal(token2.position.line, 0)
         assert.equal(token2.position.column, 5)
         assert.equal(token2.value, 56.78)
+        assert.equal(errors.length, 0)
+    })
+    it("null and string", () => {
+        const errors: TokenError[] = []
+        const result = toArray(tokenize("null\"-234\"", e => errors.push(e)))
+        assert.equal(result.length, 2)
+        const token0 = result[0]
+        if (token0.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token0.position.line, 0)
+        assert.equal(token0.position.column, 0)
+        assert.isNull(token0.value)
+        const token1 = result[1]
+        if (token1.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token1.position.line, 0)
+        assert.equal(token1.position.column, 4)
+        assert.equal(token1.value, "-234")
         assert.equal(errors.length, 0)
     })
 })
