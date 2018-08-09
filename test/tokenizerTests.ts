@@ -1,6 +1,6 @@
 import "mocha"
 import { assert } from "chai"
-import { tokenize, ParseError } from "./index"
+import { tokenize, ParseError } from "../index"
 import { toArray } from "@ts-common/iterator"
 
 describe("tokenize", () => {

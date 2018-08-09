@@ -1,8 +1,8 @@
 import {
-    JsonPrimitive, Json, JsonObject, MutableJsonArray, MutableJsonRef, MutableJsonObject
+    JsonPrimitive, Json, MutableJsonArray, MutableJsonObject
 } from "@ts-common/json"
-import { iterable, map } from "@ts-common/iterator"
-import { FilePosition, Tracked, addInfo, FileInfo } from "@ts-common/source-map"
+import { iterable, map, forEach } from "@ts-common/iterator"
+import { FilePosition, FileInfo } from "@ts-common/source-map"
 import { StringMap } from "@ts-common/string-map"
 
 namespace fa {
@@ -11,12 +11,15 @@ namespace fa {
         readonly state?: State<C, R>
     }
     export interface State<C, R> {
-        readonly next: (c: C) => Result<C, R>|void
+        readonly next?: (c: C) => Result<C, R>|void
         readonly done?: () => R|void
     }
     export function applyState<C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> {
         function *iterator() {
             for (const c of input) {
+                if (state.next === undefined) {
+                    break
+                }
                 const result = state.next(c)
                 if (result !== undefined) {
                     if (result.result !== undefined) {
@@ -39,6 +42,9 @@ namespace fa {
     export function nextState<C, R>(
         result: ReadonlyArray<R>, state: State<C, R>, c: C
     ): Result<C, R> {
+        if (state.next === undefined) {
+            return { result, state }
+        }
         const rs = state.next(c)
         if (rs === undefined) {
             return { result, state }
@@ -138,6 +144,7 @@ export interface SyntaxError extends ErrorBase {
 }
 
 export type StructureErrorMessage =
+    "unexpected end of file"|
     "unexpected token"|
     "expecting property name"
 
@@ -279,85 +286,130 @@ export const tokenize = (s: string, reportError: ReportError): Iterable<JsonToke
     return fa.applyState(addPosition(s), whiteSpaceState)
 }
 
-export const parse = (fileInfo: FileInfo, context: string, reportError: ReportError): Json => {
-    interface ObjectState {
-        readonly kind: "object",
-        readonly value: Tracked<JsonObject>
-        propertyName?: string
-    }
-    interface ArrayState {
-        readonly kind: "array",
-        readonly value: MutableJsonArray
-    }
-    type State = undefined|ObjectState|ArrayState
-    let state: State = undefined
-    const createValue = <T extends MutableJsonRef>(token: JsonToken) => addInfo(
-        {} as T,
-        {
-            kind: "object",
-            position: token.position,
-            parent: fileInfo,
-            property: 0
+export const parse = (_: FileInfo, context: string, reportError: ReportError): Json => {
+
+    type State = fa.State<JsonToken, never>
+
+    const report = (position: FilePosition, token: string, message: StructureErrorMessage) =>
+        reportError({ kind: "structure", position, token, message })
+
+    const reportToken = (token: JsonToken, message: StructureErrorMessage) =>
+        report(
+            token.position,
+            token.kind === "value" ? JSON.stringify(token.value) : token.kind,
+            message
+        )
+
+    const endState: State = {
+        next: t => {
+            reportToken(t, "unexpected token")
+            return { state: {} }
         }
-    )
-    const report = (token: JsonToken, message: StructureErrorMessage) => reportError({
-        kind: "structure",
-        position: token.position,
-        token: token.kind,
-        message
-    })
-    const unexpectedToken = (token: JsonToken) => report(token, "unexpected token")
-    for (const token of tokenize(context, reportError)) {
-        if (state === undefined) {
-            switch (token.kind) {
+    }
+
+    const objectState = (state: State, value: MutableJsonObject): State => {
+
+        const separatorState: State = {
+            next: t => {
+                switch (t.kind) {
+                    case "}": return { state }
+                    case ",": return { state: propertyState }
+                }
+                reportToken(t, "unexpected token")
+                return
+            }
+        }
+
+        const propertyValueState = (name: string): State => ({
+            next: t => {
+                if (t.kind === ":") {
+                    return {
+                        state: valueState(separatorState, v => value[name] = v)
+                    }
+                }
+                reportToken(t, "unexpected token")
+                return
+            }
+        })
+
+        const propertyState: State = {
+            next: t => {
+                if (t.kind !== "value") {
+                    reportToken(t, "unexpected token")
+                    return
+                }
+                let name = t.value
+                if (name === null) {
+                    name = "null"
+                } else if (typeof name !== "string") {
+                    reportToken(t, "expecting property name")
+                    name = name.toString()
+                }
+                return { state: propertyValueState(name) }
+            }
+        }
+
+        return {
+            next: t => {
+                if (t.kind === "}") {
+                    return { state }
+                }
+                return propertyState.next === undefined ? undefined : propertyState.next(t)
+            }
+        }
+    }
+
+    const arrayState = (state: State, value: MutableJsonArray): State => {
+
+        const separatorState: State = {
+            next: t => {
+                switch (t.kind) {
+                    case "]": return { state }
+                    case ",": return { state: itemState }
+                }
+                reportToken(t, "unexpected token")
+                return
+            }
+        }
+
+        const itemState = valueState(separatorState, v => value.push(v))
+
+        return {
+            next: t => {
+                if (t.kind === "]") {
+                    return { state }
+                }
+                return itemState.next !== undefined ? itemState.next(t) : undefined
+            }
+        }
+    }
+
+    const valueState = (state: State, set: (v: Json) => void): State => ({
+        next: t => {
+            switch (t.kind) {
                 case "value":
-                    return token.value
+                    set(t.value)
+                    return { state }
                 case "{":
-                    state = {
-                        kind: "object",
-                        value: createValue<MutableJsonObject>(token)
-                    }
-                    break
+                    const objectValue: MutableJsonObject = {}
+                    set(objectValue)
+                    return { state: objectState(state, objectValue) }
                 case "[":
-                    state = {
-                        kind: "array",
-                        value: createValue<MutableJsonArray>(token)
-                    }
-                    break
-                default:
-                    unexpectedToken(token)
-                    break
+                    const arrayValue: MutableJsonArray = []
+                    set(arrayValue)
+                    return { state: arrayState(state, arrayValue) }
             }
-        } else {
-            if (state.kind === "object") {
-                if (state.propertyName === undefined) {
-                    switch (token.kind) {
-                        case "}":
-                            return state.value
-                        case "value":
-                            if (typeof state.value !== "string") {
-                                report(token, "expecting property name")
-                            }
-                            state.propertyName = state.value.toString()
-                            break
-                        default:
-                            unexpectedToken(token)
-                            break
-                    }
-                }
-            } else {
-                switch (token.kind) {
-                    case "]":
-                        return state.value
-                    case "value":
-                        state.value.push(token.value)
-                        break
-                    default:
-                        unexpectedToken(token)
-                        break
-                }
-            }
+            reportToken(t, "unexpected token")
+            return
         }
+    })
+
+    const tokens = tokenize(context, reportError)
+    let value: Json|undefined
+    forEach(fa.applyState(tokens, valueState(endState, v => value = v)), () => {})
+    if (value === undefined) {
+        report({ line: 0, column: 0 }, "", "unexpected end of file")
+        return null
     }
-    return null
+    return value
 }
