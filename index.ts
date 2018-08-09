@@ -1,16 +1,74 @@
 import {
     JsonPrimitive, Json, JsonObject, MutableJsonArray, MutableJsonRef, MutableJsonObject
 } from "@ts-common/json"
-import { iterable } from "@ts-common/iterator"
-import { StringMap } from "@ts-common/string-map"
+import { iterable, map } from "@ts-common/iterator"
 import { FilePosition, Tracked, addInfo, FileInfo } from "@ts-common/source-map"
+import { StringMap } from "@ts-common/string-map"
 
 namespace fa {
     export interface Result<C, R> {
-        readonly result: ReadonlyArray<R>
-        readonly state: State<C, R>
+        readonly result?: ReadonlyArray<R>
+        readonly state?: State<C, R>
     }
-    export type State<C, R> = (c: IteratorResult<C>) => Result<C, R>
+    export interface State<C, R> {
+        readonly next: (c: C) => Result<C, R>|void
+        readonly done?: () => R|void
+    }
+    export function applyState<C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> {
+        function *iterator() {
+            for (const c of input) {
+                const result = state.next(c)
+                if (result !== undefined) {
+                    if (result.result !== undefined) {
+                        yield *result.result
+                    }
+                    if (result.state !== undefined) {
+                        state = result.state
+                    }
+                }
+            }
+            if (state.done !== undefined) {
+                const r = state.done()
+                if (r !== undefined) {
+                    yield r
+                }
+            }
+        }
+        return iterable(iterator)
+    }
+    export function nextState<C, R>(
+        result: ReadonlyArray<R>, state: State<C, R>, c: C
+    ): Result<C, R> {
+        const rs = state.next(c)
+        if (rs === undefined) {
+            return { result, state }
+        }
+        return {
+            result: rs.result === undefined ? result : [...result, ...rs.result],
+            state: rs.state === undefined ? state : rs.state
+        }
+    }
+}
+
+interface CharAndPosition {
+    readonly c: string
+    readonly line: number
+    readonly column: number
+}
+
+export function addPosition(s: string): Iterable<CharAndPosition> {
+    let line = 0
+    let column = 0
+    return map(s, c => {
+        const result = { c, line, column }
+        if (c === "\n") {
+            ++line
+            column = 0
+        } else {
+            ++column
+        }
+        return result
+    })
 }
 
 namespace symbol {
@@ -22,6 +80,29 @@ namespace symbol {
 namespace whiteSpace {
     export type Type = " "|"\t"|"\r"|"\n"
     const set = new Set([" ", "\t", "\r", "\n"])
+    export const is = (c: string): c is Type => set.has(c)
+}
+
+namespace jsonValue {
+    export type Type =
+        "a"|"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|
+        "k"|"l"|"m"|"n"|"o"|"p"|"q"|"r"|"s"|"t"|
+        "u"|"v"|"w"|"x"|"y"|"z"|
+        "A"|"B"|"C"|"D"|"E"|"F"|"G"|"H"|"I"|"J"|
+        "K"|"L"|"M"|"N"|"O"|"P"|"Q"|"R"|"S"|"T"|
+        "U"|"V"|"W"|"X"|"Y"|"Z"|
+        "_"|"+"|"-"|"."|
+        "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"8"
+    const set = new Set([
+        "a","b","c","d","e","f","g","h","i","j",
+        "k","l","m","n","o","p","q","r","s","t",
+        "u","v","w","x","y","z",
+        "A","B","C","D","E","F","G","H","I","J",
+        "K","L","M","N","O","P","Q","R","S","T",
+        "U","V","W","X","Y","Z",
+        "_","+","-",".",
+        "0","1","2","3","4","5","6","7","8","8"
+    ])
     export const is = (c: string): c is Type => set.has(c)
 }
 
@@ -49,7 +130,7 @@ export type SyntaxErrorMessage =
     "invalid token"|
     "invalid symbol"|
     "invalid escape symbol"|
-    "unexpected end of file"
+    "unexpected end of string"
 
 export interface SyntaxError extends ErrorBase {
     readonly kind: "syntax"
@@ -87,147 +168,115 @@ const escapeMap: EscapeMap = {
 
 export type ReportError = (error: ParseError) => void
 
-export function *tokenize2(s: string, reportError: ReportError): Iterator<JsonToken> {
+export const tokenize = (s: string, reportError: ReportError): Iterable<JsonToken> => {
+
+    type State = fa.State<CharAndPosition, JsonToken>
 
     const report = (position: FilePosition, token: string, message: SyntaxErrorMessage) =>
         reportError({ kind: "syntax", position, token, message })
 
-    const i = s[Symbol.iterator]()
-
-    let line = 0
-    let column = 0
-
-    const position = (): FilePosition => ({ line, column })
-
-    let n = i.next()
-
-    const next = () => {
-        if (!n.done) {
-            if (n.value === "\n") {
-                ++line
-                column = 0
-            } else {
-                ++column
+    const whiteSpaceState: State ={
+        next: cp => {
+            if (cp.c === "\"") {
+                return { state: stringState(cp) }
             }
-            n = i.next()
+            if (symbol.is(cp.c)) {
+                return { result: [{ kind: cp.c, position: cp }] }
+            }
+            if (jsonValue.is(cp.c)) {
+                return { state: jsonValueState(cp) }
+            }
+            if (!whiteSpace.is(cp.c)) {
+                report(cp, cp.c, "invalid symbol")
+            }
+            return
         }
     }
 
-    while (n.done) {
-        const c = n.value
-        if (symbol.is(c)) {
-            yield { position: position(), kind: c }
-        } else if (c === "\"") {
-            let value = ""
-            while (true) {
-                next()
-                if (n.done) {
-                    report(position(), value, "unexpected end of file")
+
+    function stringState(position: FilePosition): State {
+        let value = ""
+
+        const getResult = (): JsonToken => ({ kind: "value", value, position })
+
+        const done = () => {
+            report(position, value, "unexpected end of string")
+            return getResult()
+        }
+
+        const state: State = {
+            next: cp => {
+                if (cp.c === "\"") {
+                    return {
+                        result: [getResult()],
+                        state: whiteSpaceState
+                    }
+                }
+                if (isControl(cp.c)) {
+                    report(cp, cp.c, "invalid symbol")
+                }
+                if (cp.c === "\\") {
+                    return { state: escapeState }
+                }
+                value += cp.c
+                return
+            },
+            done
+        }
+
+        const escapeState: State = {
+            next: cp => {
+                const e = escapeMap[cp.c]
+                if (e === undefined) {
+                    report(cp, cp.c, "invalid escape symbol")
+                    value += cp.c
+                } else {
+                    value += e
+                }
+                return { state }
+            },
+            done
+        }
+
+        return state
+    }
+
+    function jsonValueState(prior: CharAndPosition): State {
+        let value = prior.c
+
+        const getResultValue = () => {
+            switch (value) {
+                case "true": return true
+                case "false": return false
+                case "null": return null
+            }
+            const number = parseFloat(value)
+            if (isNaN(number)) {
+                report(prior, value, "invalid token")
+                return value
+            }
+            return number
+        }
+
+        const done = (): JsonToken => ({
+            kind: "value",
+            value: getResultValue(),
+            position: prior
+        })
+
+        return {
+            next: cp => {
+                if (jsonValue.is(cp.c)) {
+                    value += cp.c
                     return
                 }
-                const cs = n.value
-                if (cs === "\"") {
-                    break
-                }
-            }
+                return fa.nextState([done()], whiteSpaceState, cp)
+            },
+            done
         }
-        next()
     }
-}
 
-export const tokenize = (s: string, reportError: ReportError): Iterable<JsonToken> => {
-    function *iterator(): Iterator<JsonToken> {
-        const report = (position: FilePosition, token: string, message: SyntaxErrorMessage) =>
-            reportError({ kind: "syntax", position, token, message })
-        const enum State { WhiteSpace, String, StringEscape }
-        let line = 0
-        let column = 0
-        const position = (): FilePosition => ({ line, column })
-        let state: State = State.WhiteSpace
-        let bufferPosition = position()
-        let buffer = ""
-        const createValueToken = (value: JsonPrimitive): [JsonValueToken] => {
-            const result: [JsonValueToken] = [{ position: bufferPosition, kind: "value", value }]
-            buffer = ""
-            return result
-        }
-        const valueToken = (): JsonValueToken[] => {
-            switch (buffer) {
-                case "": return []
-                case "true": return createValueToken(true)
-                case "false": return createValueToken(false)
-                case "null": return createValueToken(null)
-            }
-            const number = parseFloat(buffer)
-            if (isNaN(number)) {
-                report(bufferPosition, buffer,"invalid token")
-                return createValueToken(buffer)
-            }
-            return createValueToken(number)
-        }
-        for (const c of s) {
-            switch (state) {
-                case State.WhiteSpace:
-                    if (symbol.is(c)) {
-                        yield *valueToken()
-                        yield { position: position(), kind: c }
-                    } else if (c === "\"") {
-                        yield *valueToken()
-                        bufferPosition = position()
-                        state = State.String
-                    } else if (whiteSpace.is(c)) {
-                        yield *valueToken()
-                    } else {
-                        if (buffer === "") {
-                            bufferPosition = position()
-                        }
-                        buffer += c
-                    }
-                    break
-                case State.String:
-                    if (c === "\"") {
-                        yield { position: bufferPosition, kind: "value", value: buffer }
-                        buffer = ""
-                        state = State.WhiteSpace
-                    } else if (c === "\\") {
-                        state = State.StringEscape
-                    } else {
-                        if (isControl(c)) {
-                            report(position(), c, "invalid symbol")
-                        }
-                        buffer += c
-                    }
-                    break
-                case State.StringEscape:
-                    const e = escapeMap[c]
-                    if (e === undefined) {
-                        report(position(), c, "invalid escape symbol")
-                        buffer += c
-                    } else {
-                        buffer += e
-                    }
-                    state = State.String
-                    break
-            }
-            if (c === "\n") {
-                ++line
-                column = 0
-            } else {
-                ++column
-            }
-        }
-        switch (state) {
-            case State.WhiteSpace:
-                yield *valueToken()
-                break
-            case State.String:
-            case State.StringEscape:
-                report(bufferPosition, buffer, "unexpected end of file")
-                yield { position: bufferPosition, kind: "value", value: buffer }
-                break
-        }
-    }
-    return iterable(iterator)
+    return fa.applyState(addPosition(s), whiteSpaceState)
 }
 
 export const parse = (fileInfo: FileInfo, context: string, reportError: ReportError): Json => {
