@@ -1,23 +1,23 @@
 import "mocha"
 import { assert } from "chai"
-import { tokenize, TokenError } from "./index"
+import { tokenize, SyntaxError } from "./index"
 import { toArray } from "@ts-common/iterator"
 
 describe("tokenize", () => {
     it("empty", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("", e => errors.push(e))) as any[]
         assert.sameMembers(result, [])
         assert.equal(errors.length, 0)
     })
     it("spaces", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("   \t\n   ", e => errors.push(e))) as any[]
         assert.sameMembers(result, [])
         assert.equal(errors.length, 0)
     })
     it("string", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize(" \"xxx\"   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
@@ -30,7 +30,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("stringEscape", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize(" \n  \"xx\\\"x\"   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
@@ -43,7 +43,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("symbol", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize(" \r\n\t  {   ", e => errors.push(e)))
         assert.equal(result.length, 1)
         const token = result[0]
@@ -53,7 +53,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("true and false", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize(" \r\n\n\t   true  false ", e => errors.push(e)))
         assert.equal(result.length, 2)
         const token0 = result[0]
@@ -73,7 +73,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("symbol and numbers", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("-234,56.78", e => errors.push(e)))
         assert.equal(result.length, 3)
         const token0 = result[0]
@@ -97,7 +97,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("null and string", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("null\"-234\"", e => errors.push(e)))
         assert.equal(result.length, 2)
         const token0 = result[0]
@@ -117,7 +117,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 0)
     })
     it("invalid number", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("-+123e+56", e => errors.push(e)))
 
         assert.equal(result.length, 1)
@@ -133,7 +133,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 1)
     })
     it("control character", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("\"\n\"", e => errors.push(e)))
 
         assert.equal(result.length, 1)
@@ -149,7 +149,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 1)
     })
     it("invalid escape", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("\"\\a\"", e => errors.push(e)))
 
         assert.equal(result.length, 1)
@@ -165,7 +165,7 @@ describe("tokenize", () => {
         assert.equal(errors.length, 1)
     })
     it("end of file", () => {
-        const errors: TokenError[] = []
+        const errors: SyntaxError[] = []
         const result = toArray(tokenize("\"xyz", e => errors.push(e)))
 
         assert.equal(result.length, 1)

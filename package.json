@@ -41,7 +41,8 @@
   },
   "dependencies": {
     "@ts-common/iterator": "0.0.30",
-    "@ts-common/json": "0.0.10",
+    "@ts-common/json": "0.0.13",
+    "@ts-common/source-map": "0.0.3",
     "@ts-common/string-map": "0.0.6"
   }
 }
