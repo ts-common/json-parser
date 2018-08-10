@@ -119,7 +119,7 @@ describe("parse", () => {
         assert.equal(parentInfo.property, 0)
         const grandParentInfo = parentInfo.parent
         if (grandParentInfo.kind !== "file") {
-            throw new Error("granParentInfo")
+            throw new Error("grandParentInfo")
         }
 
         assert.deepEqual(json, { x: 2, "": true, rrr: [] })
