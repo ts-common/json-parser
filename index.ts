@@ -173,9 +173,14 @@ const escapeMap: EscapeMap = {
     "n": "\n",
 }
 
+export const defaultErrorReport = (e: ParseError) => { throw e }
+
 export type ReportError = (error: ParseError) => void
 
-export const tokenize = (s: string, reportError: ReportError): Iterable<JsonToken> => {
+export const tokenize = (
+    s: string,
+    reportError: ReportError = defaultErrorReport
+): Iterable<JsonToken> => {
 
     type State = fa.State<CharAndPosition, JsonToken>
 
@@ -286,7 +291,11 @@ export const tokenize = (s: string, reportError: ReportError): Iterable<JsonToke
     return fa.applyState(addPosition(s), whiteSpaceState)
 }
 
-export const parse = (fileInfo: FileInfo, context: string, reportError: ReportError): Json => {
+export const parse = (
+    fileInfo: FileInfo,
+    context: string,
+    reportError: ReportError = defaultErrorReport
+): Json => {
 
     type State = fa.State<JsonToken, never>
 

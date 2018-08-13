@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "JSON Parser",
   "main": "index.js",
   "scripts": {
