@@ -43,7 +43,7 @@
   "dependencies": {
     "@ts-common/iterator": "0.0.30",
     "@ts-common/json": "0.0.13",
-    "@ts-common/source-map": "0.0.5",
+    "@ts-common/source-map": "0.0.6",
     "@ts-common/string-map": "0.0.6",
     "tslib": "^1.9.3"
   }

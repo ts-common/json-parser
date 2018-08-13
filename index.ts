@@ -2,7 +2,7 @@ import {
     JsonPrimitive, Json, MutableJsonArray, MutableJsonObject, MutableJsonRef
 } from "@ts-common/json"
 import { iterable, map, toArray } from "@ts-common/iterator"
-import { FilePosition, FileInfo, addInfo, Info, Tracked, infoSymbol } from "@ts-common/source-map"
+import { FilePosition, FileInfo, setInfo, Info, Tracked, infoSymbol } from "@ts-common/source-map"
 import { StringMap } from "@ts-common/string-map"
 
 namespace fa {
@@ -413,7 +413,7 @@ export const parse = (
         next: t => {
             const updateRef = <T extends MutableJsonRef>(value: T): Tracked<T> => {
                 set(value)
-                return addInfo(
+                return setInfo(
                     value,
                     {
                         kind: "object",
