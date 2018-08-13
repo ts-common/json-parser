@@ -3,6 +3,7 @@ import { assert } from "chai"
 import { parse, ParseError } from "../index"
 import { getInfo } from '@ts-common/source-map';
 import { JsonArray } from '@ts-common/json';
+import * as fs from "fs"
 
 describe("parse", () => {
     it("empty", () => {
@@ -241,5 +242,10 @@ describe("parse", () => {
         )
         assert.deepEqual(json, [])
         assert.equal(errors.length, 1)
+    })
+    it("testCase", () => {
+        const url = "./test/testCase.json"
+        const context = fs.readFileSync(url).toString()
+        parse({ kind: "file", url: url}, context, e => { throw e })
     })
 })
