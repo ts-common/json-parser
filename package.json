@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "JSON Parser",
   "main": "index.js",
   "scripts": {
@@ -41,10 +41,10 @@
     "typescript": "^3.0.1"
   },
   "dependencies": {
-    "@ts-common/iterator": "0.0.32",
-    "@ts-common/json": "0.0.14",
-    "@ts-common/source-map": "0.0.17",
-    "@ts-common/string-map": "0.0.14",
+    "@ts-common/iterator": "0.0.33",
+    "@ts-common/json": "0.0.15",
+    "@ts-common/source-map": "0.0.20",
+    "@ts-common/string-map": "0.0.17",
     "tslib": "^1.9.3"
   }
 }

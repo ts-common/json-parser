@@ -58,15 +58,14 @@ namespace fa {
 
 interface CharAndPosition {
     readonly c: string
-    readonly line: number
-    readonly column: number
+    readonly position: FilePosition
 }
 
 export function addPosition(s: string): Iterable<CharAndPosition> {
     let line = 0
     let column = 0
     return map(s, c => {
-        const result = { c, line, column }
+        const result = { c, position: { line, column } }
         if (c === "\n") {
             ++line
             column = 0
@@ -190,16 +189,16 @@ export const tokenize = (
     const whiteSpaceState: State ={
         next: cp => {
             if (cp.c === "\"") {
-                return { state: stringState(cp) }
+                return { state: stringState(cp.position) }
             }
             if (symbol.is(cp.c)) {
-                return { result: [{ kind: cp.c, position: cp }] }
+                return { result: [{ kind: cp.c, position: cp.position }] }
             }
             if (jsonValue.is(cp.c)) {
                 return { state: jsonValueState(cp) }
             }
             if (!whiteSpace.is(cp.c)) {
-                report(cp, cp.c, "invalid symbol")
+                report(cp.position, cp.c, "invalid symbol")
             }
             return
         }
@@ -225,7 +224,7 @@ export const tokenize = (
                     }
                 }
                 if (isControl(cp.c)) {
-                    report(cp, cp.c, "invalid symbol")
+                    report(cp.position, cp.c, "invalid symbol")
                 }
                 if (cp.c === "\\") {
                     return { state: escapeState }
@@ -240,7 +239,7 @@ export const tokenize = (
             next: cp => {
                 const e = escapeMap[cp.c]
                 if (e === undefined) {
-                    report(cp, cp.c, "invalid escape symbol")
+                    report(cp.position, cp.c, "invalid escape symbol")
                     value += cp.c
                 } else {
                     value += e
@@ -264,7 +263,7 @@ export const tokenize = (
             }
             const number = parseFloat(value)
             if (isNaN(number)) {
-                report(prior, value, "invalid token")
+                report(prior.position, value, "invalid token")
                 return value
             }
             return number
@@ -273,7 +272,7 @@ export const tokenize = (
         const done = (): JsonToken => ({
             kind: "value",
             value: getResultValue(),
-            position: prior
+            position: prior.position
         })
 
         return {
