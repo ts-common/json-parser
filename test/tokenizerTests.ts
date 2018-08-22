@@ -26,8 +26,8 @@ describe("tokenize", () => {
             return assert.fail()
         }
         assert.equal(token.value, "xxx")
-        assert.equal(token.position.line, 0)
-        assert.equal(token.position.column, 1)
+        assert.equal(token.position.line, 1)
+        assert.equal(token.position.column, 2)
         assert.equal(errors.length, 0)
     })
     it("stringEscape", () => {
@@ -39,8 +39,8 @@ describe("tokenize", () => {
             return assert.fail()
         }
         assert.equal(token.value, "xx\"x")
-        assert.equal(token.position.line, 1)
-        assert.equal(token.position.column, 2)
+        assert.equal(token.position.line, 2)
+        assert.equal(token.position.column, 3)
         assert.equal(errors.length, 0)
     })
     it("symbol", () => {
@@ -49,8 +49,8 @@ describe("tokenize", () => {
         assert.equal(result.length, 1)
         const token = result[0]
         assert.equal(token.kind, "{")
-        assert.equal(token.position.line, 1)
-        assert.equal(token.position.column, 3)
+        assert.equal(token.position.line, 2)
+        assert.equal(token.position.column, 4)
         assert.equal(errors.length, 0)
     })
     it("true and false", () => {
@@ -61,15 +61,15 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 2)
-        assert.equal(token0.position.column, 4)
+        assert.equal(token0.position.line, 3)
+        assert.equal(token0.position.column, 5)
         assert.isTrue(token0.value)
         const token1 = result[1]
         if (token1.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token1.position.line, 2)
-        assert.equal(token1.position.column, 10)
+        assert.equal(token1.position.line, 3)
+        assert.equal(token1.position.column, 11)
         assert.isFalse(token1.value)
         assert.equal(errors.length, 0)
     })
@@ -81,19 +81,19 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.equal(token0.value, -234)
         const token1 = result[1]
         assert.equal(token1.kind, ",")
-        assert.equal(token1.position.line, 0)
-        assert.equal(token1.position.column, 4)
+        assert.equal(token1.position.line, 1)
+        assert.equal(token1.position.column, 5)
         const token2 = result[2]
         if (token2.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token2.position.line, 0)
-        assert.equal(token2.position.column, 5)
+        assert.equal(token2.position.line, 1)
+        assert.equal(token2.position.column, 6)
         assert.equal(token2.value, 56.78)
         assert.equal(errors.length, 0)
     })
@@ -105,15 +105,15 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.isNull(token0.value)
         const token1 = result[1]
         if (token1.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token1.position.line, 0)
-        assert.equal(token1.position.column, 4)
+        assert.equal(token1.position.line, 1)
+        assert.equal(token1.position.column, 5)
         assert.equal(token1.value, "-234")
         assert.equal(errors.length, 0)
     })
@@ -127,8 +127,8 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.equal(token0.value, "-+123e+56")
 
         assert.equal(errors.length, 1)
@@ -143,8 +143,8 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.equal(token0.value, "\n")
 
         assert.equal(errors.length, 1)
@@ -159,8 +159,8 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.equal(token0.value, "a")
 
         assert.equal(errors.length, 1)
@@ -175,8 +175,8 @@ describe("tokenize", () => {
         if (token0.kind !== "value") {
             return assert.fail()
         }
-        assert.equal(token0.position.line, 0)
-        assert.equal(token0.position.column, 0)
+        assert.equal(token0.position.line, 1)
+        assert.equal(token0.position.column, 1)
         assert.equal(token0.value, "xyz")
 
         assert.equal(errors.length, 1)

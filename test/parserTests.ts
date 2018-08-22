@@ -1,7 +1,7 @@
 import "mocha"
 import { assert } from "chai"
 import { parse, ParseError } from "../index"
-import { getInfo } from '@ts-common/source-map';
+import { getInfo, objectInfoSymbol } from '@ts-common/source-map';
 import { JsonArray } from '@ts-common/json';
 import * as fs from "fs"
 
@@ -9,7 +9,7 @@ describe("parse", () => {
     it("empty", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "",
             e => errors.push(e)
         )
@@ -21,7 +21,7 @@ describe("parse", () => {
     it("null", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "null",
             e => errors.push(e)
         )
@@ -31,7 +31,7 @@ describe("parse", () => {
     it("number", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "+234.56e-1",
             e => errors.push(e)
         )
@@ -41,7 +41,7 @@ describe("parse", () => {
     it("string", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  \"hello world!\"  ",
             e => errors.push(e)
         )
@@ -51,7 +51,7 @@ describe("parse", () => {
     it("empty object", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  { \n }  ",
             e => errors.push(e)
         )
@@ -61,7 +61,7 @@ describe("parse", () => {
     it("empty array", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  [ \n    \n\t  ]  ",
             e => errors.push(e)
         )
@@ -71,7 +71,7 @@ describe("parse", () => {
     it("object with one property", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  { \"x\": 2\n }  ",
             e => errors.push(e)
         )
@@ -79,48 +79,36 @@ describe("parse", () => {
             throw new Error("not object")
         }
         const info = getInfo(json)
-        if (info === undefined || info.kind !== "object") {
+        if (info === undefined || info.isChild) {
             throw new Error("info")
         }
-        assert.equal(info.position.line, 0)
-        assert.equal(info.position.column, 2)
+        assert.equal(info.position.line, 1)
+        assert.equal(info.position.column, 3)
 
-        assert.equal(info.property, 0)
-        const parentInfo = info.parent
-        if (parentInfo.kind !== "file") {
-            throw new Error("info")
-        }
-
-        assert.equal(parentInfo.url, "fakeurl.json")
+        assert.equal(info.url, "fakeurl.json")
         assert.deepEqual(json, { x: 2 })
         assert.equal(errors.length, 0)
     })
     it("object with three properties", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  { \"x\": 2\n, \"\": true, \"rrr\":\n\n\n \t[] }  ",
             e => errors.push(e)
         )
 
         const jsonRrr: JsonArray = (json as any).rrr
         const info = getInfo(jsonRrr)
-        if (info === undefined || info.kind !== "object") {
+        if (info === undefined || !info.isChild) {
             throw new Error("info")
         }
-        assert.equal(info.position.line, 4)
-        assert.equal(info.position.column, 2)
+        assert.equal(info.position.line, 5)
+        assert.equal(info.position.column, 3)
 
         assert.equal(info.property, "rrr")
-        const parentInfo = info.parent
-        if (parentInfo.kind !== "object") {
+        const parentInfo = info.parent[objectInfoSymbol]
+        if (parentInfo.isChild) {
             throw new Error("info")
-        }
-
-        assert.equal(parentInfo.property, 0)
-        const grandParentInfo = parentInfo.parent
-        if (grandParentInfo.kind !== "file") {
-            throw new Error("grandParentInfo")
         }
 
         assert.deepEqual(json, { x: 2, "": true, rrr: [] })
@@ -129,7 +117,7 @@ describe("parse", () => {
     it("array with one item", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  [ false ]  ",
             e => errors.push(e)
         )
@@ -139,7 +127,7 @@ describe("parse", () => {
     it("array with three items", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             "  [ false, { \"na::\": [ null, true] }, -456 ]  ",
             e => errors.push(e)
         )
@@ -148,7 +136,7 @@ describe("parse", () => {
 
         const na = (json as any)[1]["na::"]
         const info = getInfo(na)
-        if (info === undefined || info.kind !== "object") {
+        if (info === undefined || !info.isChild) {
             throw new Error("info")
         }
         assert.equal(info.property, "na::")
@@ -156,7 +144,7 @@ describe("parse", () => {
     it("two values", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " false true ",
             e => errors.push(e)
         )
@@ -166,7 +154,7 @@ describe("parse", () => {
     it("two tokens after value", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " {} [] ",
             e => errors.push(e)
         )
@@ -176,7 +164,7 @@ describe("parse", () => {
     it("invalid second property", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " { \"\": 4 5 }",
             e => errors.push(e)
         )
@@ -186,7 +174,7 @@ describe("parse", () => {
     it("invalid property separator", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " { \"\" 4 }",
             e => errors.push(e)
         )
@@ -196,7 +184,7 @@ describe("parse", () => {
     it("invalid property name", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " { [] }",
             e => errors.push(e)
         )
@@ -206,7 +194,7 @@ describe("parse", () => {
     it("strange property name", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " { 45:54 }",
             e => errors.push(e)
         )
@@ -216,7 +204,7 @@ describe("parse", () => {
     it("null property name", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " { null:54 }",
             e => errors.push(e)
         )
@@ -226,7 +214,7 @@ describe("parse", () => {
     it("array with no separator", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " [ null \n +567.4e-56]",
             e => errors.push(e)
         )
@@ -236,7 +224,7 @@ describe("parse", () => {
     it("invalid json", () => {
         const errors: Array<ParseError> = []
         const json = parse(
-            { kind: "file", url: "fakeurl.json" },
+            "fakeurl.json",
             " } []",
             e => errors.push(e)
         )
@@ -246,6 +234,6 @@ describe("parse", () => {
     it("testCase", () => {
         const url = "./test/testCase9.json"
         const context = fs.readFileSync(url).toString()
-        parse({ kind: "file", url: url}, context, e => { throw e })
+        parse(url, context, e => { throw e })
     })
 })

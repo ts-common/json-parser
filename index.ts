@@ -2,7 +2,7 @@ import {
     JsonPrimitive, Json, MutableJsonArray, MutableJsonObject, MutableJsonRef
 } from "@ts-common/json"
 import { iterable, map, toArray } from "@ts-common/iterator"
-import { FilePosition, FileInfo, setInfo, Info, Tracked, infoSymbol } from "@ts-common/source-map"
+import { FilePosition, setInfo, Tracked, ObjectInfo } from "@ts-common/source-map"
 import { StringMap } from "@ts-common/string-map"
 
 namespace fa {
@@ -62,13 +62,13 @@ interface CharAndPosition {
 }
 
 export function addPosition(s: string): Iterable<CharAndPosition> {
-    let line = 0
-    let column = 0
+    let line = 1
+    let column = 1
     return map(s, c => {
         const result = { c, position: { line, column } }
         if (c === "\n") {
             ++line
-            column = 0
+            column = 1
         } else {
             ++column
         }
@@ -291,7 +291,7 @@ export const tokenize = (
 }
 
 export const parse = (
-    fileInfo: FileInfo,
+    url: string,
     context: string,
     reportError: ReportError = defaultErrorReport
 ): Json => {
@@ -319,7 +319,7 @@ export const parse = (
         state: State,
         value: Tracked<MutableJsonObject>,
     ): State => {
-        const info = value[infoSymbol]
+        // const info = value[objectInfoSymbol]
 
         const separatorState: State = {
             next: t => {
@@ -338,9 +338,15 @@ export const parse = (
                     return {
                         state: valueState(
                             separatorState,
-                            v => value[name] = v,
-                            info,
-                            name
+                            (v, position) => {
+                                value[name] = v
+                                return {
+                                    isChild: true,
+                                    position,
+                                    parent: value,
+                                    property: name
+                                }
+                            }
                         )
                     }
                 }
@@ -381,7 +387,7 @@ export const parse = (
         state: State,
         value: Tracked<MutableJsonArray>
     ): State => {
-        const info = value[infoSymbol]
+        // const info = value[objectInfoSymbol]
 
         const separatorState: State = {
             next: t => {
@@ -394,7 +400,18 @@ export const parse = (
             }
         }
 
-        const itemState = valueState(separatorState, v => value.push(v), info, value.length)
+        const itemState = valueState(
+            separatorState,
+            (v, position) => {
+                const property = value.push(v) - 1
+                return {
+                    isChild: true,
+                    parent: value,
+                    position,
+                    property
+                }
+            }
+        )
 
         return {
             next: t => {
@@ -407,23 +424,17 @@ export const parse = (
     }
 
     const valueState = (
-        state: State, set: (v: Json) => void, parent: Info, property: string|number
+        state: State,
+        set: (v: Json, position: FilePosition) => ObjectInfo,
     ): State => ({
         next: t => {
             const updateRef = <T extends MutableJsonRef>(value: T): Tracked<T> => {
-                set(value)
-                return setInfo(
-                    value,
-                    {
-                        kind: "object",
-                        position: t.position,
-                        parent: parent,
-                        property: property
-                    })
+                const info = set(value, t.position)
+                return setInfo(value, info)
             }
             switch (t.kind) {
                 case "value":
-                    set(t.value)
+                    set(t.value, t.position)
                     return { state }
                 case "{":
                     const objectValue = updateRef<MutableJsonObject>({})
@@ -439,9 +450,22 @@ export const parse = (
 
     const tokens = tokenize(context, reportError)
     let value: Json|undefined
-    toArray(fa.applyState(tokens, valueState(endState, v => value = v, fileInfo, 0)))
+    toArray(fa.applyState(
+        tokens,
+        valueState(
+            endState,
+            (v, position) => {
+                value = v
+                return {
+                    isChild: false,
+                    position,
+                    url
+                }
+            }
+        )
+    ))
     if (value === undefined) {
-        report({ line: 0, column: 0 }, "", "unexpected end of file")
+        report({ line: 1, column: 1 }, "", "unexpected end of file")
         return null
     }
     return value
