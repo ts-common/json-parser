@@ -3,7 +3,8 @@ import {
 } from "@ts-common/json"
 import { iterable, map, toArray } from "@ts-common/iterator"
 import { FilePosition, setInfo, Tracked, ObjectInfo } from "@ts-common/source-map"
-import { StringMap } from "@ts-common/string-map"
+import { StringMap, MutableStringMap } from "@ts-common/string-map"
+import { isPrimitive } from 'util';
 
 namespace fa {
     export interface Result<C, R> {
@@ -315,16 +316,18 @@ export const parse = (
         }
     }
 
-    const objectState = (
-        state: State,
-        value: Tracked<MutableJsonObject>,
-    ): State => {
-        // const info = value[objectInfoSymbol]
+    interface ObjectOrArrayState<T extends object> {
+        readonly state: State
+        readonly value: Tracked<T>
+        readonly primitiveProperties: MutableStringMap<FilePosition>
+    }
+
+    const objectState = (os: ObjectOrArrayState<MutableJsonObject>): State => {
 
         const separatorState: State = {
             next: t => {
                 switch (t.kind) {
-                    case "}": return { state }
+                    case "}": return { state: os.state }
                     case ",": return { state: propertyState }
                 }
                 reportToken(t, "unexpected token")
@@ -338,13 +341,17 @@ export const parse = (
                     return {
                         state: valueState(
                             separatorState,
-                            (v, position) => {
-                                value[name] = v
+                            (v, position, primitiveProperties) => {
+                                os.value[name] = v
+                                if (isPrimitive(v)) {
+                                    os.primitiveProperties[name] = position
+                                }
                                 return {
                                     isChild: true,
                                     position,
-                                    parent: value,
-                                    property: name
+                                    parent: os.value,
+                                    property: name,
+                                    primitiveProperties
                                 }
                             }
                         )
@@ -376,23 +383,19 @@ export const parse = (
         return {
             next: t => {
                 if (t.kind === "}") {
-                    return { state }
+                    return { state: os.state }
                 }
                 return propertyState.next === undefined ? undefined : propertyState.next(t)
             }
         }
     }
 
-    const arrayState = (
-        state: State,
-        value: Tracked<MutableJsonArray>
-    ): State => {
-        // const info = value[objectInfoSymbol]
+    const arrayState = (as: ObjectOrArrayState<MutableJsonArray>): State => {
 
         const separatorState: State = {
             next: t => {
                 switch (t.kind) {
-                    case "]": return { state }
+                    case "]": return { state: as.state }
                     case ",": return { state: itemState }
                 }
                 reportToken(t, "unexpected token")
@@ -402,13 +405,17 @@ export const parse = (
 
         const itemState = valueState(
             separatorState,
-            (v, position) => {
-                const property = value.push(v) - 1
+            (v, position, primitiveProperties) => {
+                const property = as.value.push(v) - 1
+                if (isPrimitive(v)) {
+                    as.primitiveProperties[property] = position
+                }
                 return {
                     isChild: true,
-                    parent: value,
+                    parent: as.value,
                     position,
-                    property
+                    property,
+                    primitiveProperties
                 }
             }
         )
@@ -416,7 +423,7 @@ export const parse = (
         return {
             next: t => {
                 if (t.kind === "]") {
-                    return { state }
+                    return { state: as.state }
                 }
                 return itemState.next !== undefined ? itemState.next(t) : undefined
             }
@@ -425,23 +432,28 @@ export const parse = (
 
     const valueState = (
         state: State,
-        set: (v: Json, position: FilePosition) => ObjectInfo,
+        set: (
+            v: Json,
+            position: FilePosition,
+            primitiveProperties: StringMap<FilePosition>
+        ) => ObjectInfo,
     ): State => ({
         next: t => {
-            const updateRef = <T extends MutableJsonRef>(value: T): Tracked<T> => {
-                const info = set(value, t.position)
-                return setInfo(value, info)
+            const updateRef = <T extends MutableJsonRef>(value: T): ObjectOrArrayState<T> => {
+                const primitiveProperties: MutableStringMap<FilePosition> = {}
+                const info = set(value, t.position, primitiveProperties)
+                return { state, value: setInfo(value, info), primitiveProperties }
             }
             switch (t.kind) {
                 case "value":
-                    set(t.value, t.position)
+                    set(t.value, t.position, {})
                     return { state }
                 case "{":
-                    const objectValue = updateRef<MutableJsonObject>({})
-                    return { state: objectState(state, objectValue) }
+                    const objectRef = updateRef<MutableJsonObject>({})
+                    return { state: objectState(objectRef) }
                 case "[":
-                    const arrayValue = updateRef<MutableJsonArray>([])
-                    return { state: arrayState(state, arrayValue) }
+                    const arrayRef = updateRef<MutableJsonArray>([])
+                    return { state: arrayState(arrayRef) }
             }
             reportToken(t, "unexpected token")
             return
@@ -454,12 +466,13 @@ export const parse = (
         tokens,
         valueState(
             endState,
-            (v, position) => {
+            (v, position, primitiveProperties) => {
                 value = v
                 return {
                     isChild: false,
                     position,
-                    url
+                    url,
+                    primitiveProperties
                 }
             }
         )

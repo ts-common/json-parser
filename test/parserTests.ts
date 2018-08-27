@@ -106,7 +106,7 @@ describe("parse", () => {
         assert.equal(info.position.column, 3)
 
         assert.equal(info.property, "rrr")
-        const parentInfo = info.parent[objectInfoSymbol]
+        const parentInfo = info.parent[objectInfoSymbol]()
         if (parentInfo.isChild) {
             throw new Error("info")
         }
