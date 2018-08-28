@@ -42,8 +42,8 @@
   },
   "dependencies": {
     "@ts-common/iterator": "0.0.36",
-    "@ts-common/json": "0.0.17",
-    "@ts-common/source-map": "0.2.5",
+    "@ts-common/json": "0.0.18",
+    "@ts-common/source-map": "0.2.6",
     "@ts-common/string-map": "0.0.26",
     "tslib": "^1.9.3"
   }
