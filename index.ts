@@ -15,8 +15,8 @@ namespace fa {
         readonly next?: (c: C) => Result<C, R>|void
         readonly done?: () => R|void
     }
-    export function applyState<C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> {
-        function *iterator() {
+    export const applyState = <C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> =>
+        iterable(function *() {
             for (const c of input) {
                 if (state.next === undefined) {
                     break
@@ -37,9 +37,7 @@ namespace fa {
                     yield r
                 }
             }
-        }
-        return iterable(iterator)
-    }
+        })
     export function nextState<C, R>(
         result: ReadonlyArray<R>, state: State<C, R>, c: C
     ): Result<C, R> {
