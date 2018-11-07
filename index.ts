@@ -38,9 +38,9 @@ namespace fa {
                 }
             }
         })
-    export function nextState<C, R>(
+    export const nextState = <C, R>(
         result: ReadonlyArray<R>, state: State<C, R>, c: C
-    ): Result<C, R> {
+    ): Result<C, R> => {
         if (state.next === undefined) {
             return { result, state }
         }
@@ -60,7 +60,7 @@ interface CharAndPosition {
     readonly position: FilePosition
 }
 
-export function addPosition(s: string): Iterable<CharAndPosition> {
+export const addPosition = (s: string): Iterable<CharAndPosition> => {
     let line = 1
     let column = 1
     return map(s, c => {
