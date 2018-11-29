@@ -43,6 +43,45 @@ describe("tokenize", () => {
         assert.equal(token.position.column, 3)
         assert.equal(errors.length, 0)
     })
+    it("stringUnicodeEscape", () => {
+        const errors: ParseError[] = []
+        const result = toArray(tokenize("\"\\u00AE\"", e => errors.push(e)))
+        assert.equal(result.length, 1)
+        const token = result[0]
+        if (token.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token.value, "®")
+        assert.equal(token.position.line, 1)
+        assert.equal(token.position.column, 1)
+        assert.equal(errors.length, 0)
+    })
+    it("invalidUnicodeEscape", () => {
+        const errors: ParseError[] = []
+        const result = toArray(tokenize("\"\\u0XAE\"", e => errors.push(e)))
+        assert.equal(result.length, 1)
+        const token = result[0]
+        if (token.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token.value, "AE")
+        assert.equal(token.position.line, 1)
+        assert.equal(token.position.column, 1)
+        assert.equal(errors.length, 1)
+    })
+    it("unexpectedUnicodeEscapeEnd", () => {
+        const errors: ParseError[] = []
+        const result = toArray(tokenize("\"\\u0", e => errors.push(e)))
+        assert.equal(result.length, 1)
+        const token = result[0]
+        if (token.kind !== "value") {
+            return assert.fail()
+        }
+        assert.equal(token.value, "")
+        assert.equal(token.position.line, 1)
+        assert.equal(token.position.column, 1)
+        assert.equal(errors.length, 1)
+    })
     it("symbol", () => {
         const errors: ParseError[] = []
         const result = toArray(tokenize(" \r\n\t  {   ", e => errors.push(e)))
