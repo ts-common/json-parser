@@ -278,6 +278,7 @@ export const tokenize = (
             done
         }
 
+        // UNICODE escape sequence
         const unicodeState = (): State => {
             let i = 0
             let u = 0
@@ -290,6 +291,7 @@ export const tokenize = (
                     }
                     u = (u << 4) | h
                     ++i
+                    // always for symbols https://json.org/
                     if (i < 4) {
                         return
                     }
