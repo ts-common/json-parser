@@ -158,7 +158,7 @@ const isControl = (c: string): boolean => {
     return code <= 0x1F || code === 0x7F
 }
 
-type EscapeMap = StringMap<string|undefined>
+type EscapeMap = StringMap<string>
 
 const escapeMap: EscapeMap = {
     "\"": "\"",
@@ -169,6 +169,33 @@ const escapeMap: EscapeMap = {
     "f": "\f",
     "r": "\r",
     "n": "\n",
+}
+
+type HexMap = StringMap<number>
+
+const hexMap: HexMap = {
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "A": 0xA,
+    "a": 0xA,
+    "B": 0xB,
+    "b": 0xb,
+    "C": 0xC,
+    "c": 0xc,
+    "D": 0xD,
+    "d": 0xd,
+    "E": 0xE,
+    "e": 0xe,
+    "F": 0xF,
+    "f": 0xf,
 }
 
 export const defaultErrorReport = (e: ParseError) => { throw e }
@@ -237,7 +264,7 @@ export const tokenize = (
         const escapeState: State = {
             next: cp => {
                 if (cp.c === "u") {
-                    return { state: unicodeState }
+                    return { state: unicodeState() }
                 }
                 const e = escapeMap[cp.c]
                 if (e === undefined) {
@@ -251,11 +278,26 @@ export const tokenize = (
             done
         }
 
-        const unicodeState: State = {
-            next: () => {
-                return { state }
-            },
-            done
+        const unicodeState = (): State => {
+            let i = 0
+            let u = 0
+            return {
+                next: cp => {
+                    const h = hexMap[cp.c]
+                    if (h === undefined) {
+                        report(cp.position, cp.c, "invalid escape symbol")
+                        return { state }
+                    }
+                    u = (u << 4) | h
+                    ++i
+                    if (i < 4) {
+                        return
+                    }
+                    value += String.fromCharCode(u)
+                    return { state }
+                },
+                done
+            }
         }
 
         return state

@@ -64,3 +64,4 @@ typings/
 *.d.ts
 *.map
 .vs
+package-lock.json
