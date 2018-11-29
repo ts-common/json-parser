@@ -16,7 +16,8 @@ describe("parse", () => {
         assert.isNull(json)
         assert.equal(errors.length, 1)
         const x = errors[0]
-        assert.equal(x.message, "unexpected end of file")
+        assert.equal(x.code, "unexpected end of file")
+        assert.equal(x.message, "unexpected end of file, token: , line: 1, column: 1")
     })
     it("null", () => {
         const errors: Array<ParseError> = []
@@ -150,6 +151,9 @@ describe("parse", () => {
         )
         assert.deepEqual(json, false)
         assert.equal(errors.length, 1)
+        const error = errors[0]
+        assert.equal(error.code, "unexpected token")
+        assert.equal(error.message, "unexpected token, token: true, line: 1, column: 8")
     })
     it("two tokens after value", () => {
         const errors: Array<ParseError> = []
