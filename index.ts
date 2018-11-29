@@ -238,6 +238,9 @@ export const tokenize = (
 
         const escapeState: State = {
             next: cp => {
+                if (cp.c === "u") {
+                    return { state: unicodeState }
+                }
                 const e = escapeMap[cp.c]
                 if (e === undefined) {
                     report(cp.position, cp.c, "invalid escape symbol")
@@ -245,6 +248,13 @@ export const tokenize = (
                 } else {
                     value += e
                 }
+                return { state }
+            },
+            done
+        }
+
+        const unicodeState: State = {
+            next: () => {
                 return { state }
             },
             done
