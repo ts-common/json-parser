@@ -128,9 +128,10 @@ type JsonToken = JsonSymbolToken|JsonValueToken
 export interface ErrorBase {
     readonly position: FilePosition
     readonly token: string
+    readonly message: string
 }
 
-export type SyntaxErrorMessage =
+export type SyntaxErrorCode =
     "invalid token"|
     "invalid symbol"|
     "invalid escape symbol"|
@@ -138,17 +139,17 @@ export type SyntaxErrorMessage =
 
 export interface SyntaxError extends ErrorBase {
     readonly kind: "syntax"
-    readonly message: SyntaxErrorMessage
+    readonly code: SyntaxErrorCode
 }
 
-export type StructureErrorMessage =
+export type StructureErrorCode =
     "unexpected end of file"|
     "unexpected token"|
     "expecting property name"
 
 export interface StructureError extends ErrorBase {
     readonly kind: "structure"
-    readonly message: StructureErrorMessage
+    readonly code: StructureErrorCode
 }
 
 export type ParseError = SyntaxError|StructureError
@@ -209,8 +210,14 @@ export const tokenize = (
 
     type State = fa.State<CharAndPosition, JsonToken>
 
-    const report = (position: FilePosition, token: string, message: SyntaxErrorMessage) =>
-        reportError({ kind: "syntax", position, token, message })
+    const report = (position: FilePosition, token: string, code: SyntaxErrorCode) =>
+        reportError({
+            kind: "syntax",
+            code,
+            position,
+            token,
+            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`
+        })
 
     const whiteSpaceState: State ={
         next: cp => {
@@ -351,10 +358,16 @@ export const parse = (
 
     type State = fa.State<JsonToken, never>
 
-    const report = (position: FilePosition, token: string, message: StructureErrorMessage) =>
-        reportError({ kind: "structure", position, token, message })
+    const report = (position: FilePosition, token: string, code: StructureErrorCode) =>
+        reportError({
+            kind: "structure",
+            code,
+            position,
+            token,
+            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`
+        })
 
-    const reportToken = (token: JsonToken, message: StructureErrorMessage) =>
+    const reportToken = (token: JsonToken, message: StructureErrorCode) =>
         report(
             token.position,
             token.kind === "value" ? JSON.stringify(token.value) : token.kind,
