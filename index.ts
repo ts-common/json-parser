@@ -1,5 +1,5 @@
 import {
-    JsonPrimitive, Json, MutableJsonArray, MutableJsonObject, MutableJsonRef
+    JsonPrimitive, Json, MutableJsonArray, MutableJsonObject, MutableJsonRef, JsonRef
 } from "@ts-common/json"
 import { iterable, map, toArray } from "@ts-common/iterator"
 import { FilePosition, setInfo, Tracked, ObjectInfo } from "@ts-common/source-map"
@@ -381,7 +381,7 @@ export const parse = (
         }
     }
 
-    interface ObjectOrArrayState<T extends object> {
+    interface ObjectOrArrayState<T extends JsonRef> {
         readonly state: State
         readonly value: Tracked<T>
         readonly primitiveProperties: MutableStringMap<FilePosition>
