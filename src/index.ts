@@ -364,7 +364,7 @@ export const parse = (
         }
     }
 
-    interface ObjectOrArrayState<T extends JsonRef> {
+    interface ObjectOrArrayState<T extends json.JsonRef> {
         readonly state: State
         readonly value: sourceMap.Tracked<T>
         readonly primitiveProperties: stringMap.MutableStringMap<sourceMap.FilePosition>
