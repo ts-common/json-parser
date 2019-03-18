@@ -129,6 +129,7 @@ export interface ErrorBase {
     readonly position: FilePosition
     readonly token: string
     readonly message: string
+    readonly url: string
 }
 
 export type SyntaxErrorCode =
@@ -205,7 +206,8 @@ export type ReportError = (error: ParseError) => void
 
 export const tokenize = (
     s: string,
-    reportError: ReportError = defaultErrorReport
+    reportError: ReportError = defaultErrorReport,
+    url: string,
 ): Iterable<JsonToken> => {
 
     type State = fa.State<CharAndPosition, JsonToken>
@@ -216,7 +218,8 @@ export const tokenize = (
             code,
             position,
             token,
-            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`
+            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`,
+            url,
         })
 
     const whiteSpaceState: State ={
@@ -364,7 +367,8 @@ export const parse = (
             code,
             position,
             token,
-            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`
+            message: `${code}, token: ${token}, line: ${position.line}, column: ${position.column}`,
+            url,
         })
 
     const reportToken = (token: JsonToken, message: StructureErrorCode) =>
@@ -525,7 +529,7 @@ export const parse = (
         }
     })
 
-    const tokens = tokenize(context, reportError)
+    const tokens = tokenize(context, reportError, url)
     let value: Json|undefined
     toArray(fa.applyState(
         tokens,

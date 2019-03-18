@@ -6,19 +6,19 @@ import { toArray } from "@ts-common/iterator"
 describe("tokenize", () => {
     it("empty", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("", e => errors.push(e))) as any[]
+        const result = toArray(tokenize("", e => errors.push(e), "url")) as any[]
         assert.sameMembers(result, [])
         assert.equal(errors.length, 0)
     })
     it("spaces", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("   \t\n   ", e => errors.push(e))) as any[]
+        const result = toArray(tokenize("   \t\n   ", e => errors.push(e), "url")) as any[]
         assert.sameMembers(result, [])
         assert.equal(errors.length, 0)
     })
     it("string", () => {
         const errors: ParseError[] = []
-        const ir = tokenize(" \"xxx\"   ", e => errors.push(e))
+        const ir = tokenize(" \"xxx\"   ", e => errors.push(e), "url")
         const result = toArray(ir)
         assert.equal(result.length, 1)
         const token = result[0]
@@ -32,7 +32,7 @@ describe("tokenize", () => {
     })
     it("stringEscape", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize(" \n  \"xx\\\"x\"   ", e => errors.push(e)))
+        const result = toArray(tokenize(" \n  \"xx\\\"x\"   ", e => errors.push(e), "url"))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -45,7 +45,7 @@ describe("tokenize", () => {
     })
     it("stringUnicodeEscape", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"\\u00AE\"", e => errors.push(e)))
+        const result = toArray(tokenize("\"\\u00AE\"", e => errors.push(e), "url"))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -58,7 +58,7 @@ describe("tokenize", () => {
     })
     it("invalidUnicodeEscape", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"\\u0XAE\"", e => errors.push(e)))
+        const result = toArray(tokenize("\"\\u0XAE\"", e => errors.push(e), "someurl.json"))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -68,10 +68,11 @@ describe("tokenize", () => {
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 1)
         assert.equal(errors.length, 1)
+        assert.deepStrictEqual(errors[0].url, "someurl.json")
     })
     it("unexpectedUnicodeEscapeEnd", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"\\u0", e => errors.push(e)))
+        const result = toArray(tokenize("\"\\u0", e => errors.push(e), "url"))
         assert.equal(result.length, 1)
         const token = result[0]
         if (token.kind !== "value") {
@@ -84,7 +85,7 @@ describe("tokenize", () => {
     })
     it("symbol", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize(" \r\n\t  {   ", e => errors.push(e)))
+        const result = toArray(tokenize(" \r\n\t  {   ", e => errors.push(e), "url"))
         assert.equal(result.length, 1)
         const token = result[0]
         assert.equal(token.kind, "{")
@@ -94,7 +95,7 @@ describe("tokenize", () => {
     })
     it("true and false", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize(" \r\n\n\t   true  false ", e => errors.push(e)))
+        const result = toArray(tokenize(" \r\n\n\t   true  false ", e => errors.push(e), "url"))
         assert.equal(result.length, 2)
         const token0 = result[0]
         if (token0.kind !== "value") {
@@ -114,7 +115,7 @@ describe("tokenize", () => {
     })
     it("symbol and numbers", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("-234,56.78", e => errors.push(e)))
+        const result = toArray(tokenize("-234,56.78", e => errors.push(e), "url"))
         assert.equal(result.length, 3)
         const token0 = result[0]
         if (token0.kind !== "value") {
@@ -138,7 +139,7 @@ describe("tokenize", () => {
     })
     it("null and string", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("null\"-234\"", e => errors.push(e)))
+        const result = toArray(tokenize("null\"-234\"", e => errors.push(e), "url"))
         assert.equal(result.length, 2)
         const token0 = result[0]
         if (token0.kind !== "value") {
@@ -158,7 +159,7 @@ describe("tokenize", () => {
     })
     it("invalid number", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("-+123e+56", e => errors.push(e)))
+        const result = toArray(tokenize("-+123e+56", e => errors.push(e), "url"))
 
         assert.equal(result.length, 1)
 
@@ -174,7 +175,7 @@ describe("tokenize", () => {
     })
     it("control character", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"\n\"", e => errors.push(e)))
+        const result = toArray(tokenize("\"\n\"", e => errors.push(e), "url"))
 
         assert.equal(result.length, 1)
 
@@ -190,7 +191,7 @@ describe("tokenize", () => {
     })
     it("invalid escape", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"\\a\"", e => errors.push(e)))
+        const result = toArray(tokenize("\"\\a\"", e => errors.push(e), "url"))
 
         assert.equal(result.length, 1)
 
@@ -206,7 +207,7 @@ describe("tokenize", () => {
     })
     it("end of file", () => {
         const errors: ParseError[] = []
-        const result = toArray(tokenize("\"xyz", e => errors.push(e)))
+        const result = toArray(tokenize("\"xyz", e => errors.push(e), "url"))
 
         assert.equal(result.length, 1)
 
@@ -222,7 +223,7 @@ describe("tokenize", () => {
     })
     it("invalid symbol", () => {
         const errors: ParseError[] = []
-        toArray(tokenize("*", e => errors.push(e)))
+        toArray(tokenize("*", e => errors.push(e), "url"))
         assert.equal(errors.length, 1)
     })
 })

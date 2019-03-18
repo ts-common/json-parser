@@ -236,7 +236,7 @@ describe("parse", () => {
         assert.equal(errors.length, 1)
     })
     it("testCase", () => {
-        const url = "./test/testCase9.json"
+        const url = "./src/test/testCase9.json"
         const context = fs.readFileSync(url).toString()
         parse(url, context, e => { throw e })
     })
