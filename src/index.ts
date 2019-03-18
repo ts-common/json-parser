@@ -1,10 +1,7 @@
-import {
-    JsonPrimitive, Json, MutableJsonArray, MutableJsonObject, MutableJsonRef, JsonRef
-} from "@ts-common/json"
-import { iterable, map, toArray } from "@ts-common/iterator"
-import { FilePosition, setInfo, Tracked, ObjectInfo } from "@ts-common/source-map"
-import { StringMap, MutableStringMap } from "@ts-common/string-map"
-import { isPrimitive } from 'util';
+import * as json from "@ts-common/json"
+import * as iterator from "@ts-common/iterator"
+import * as sourceMap from "@ts-common/source-map"
+import * as stringMap from "@ts-common/string-map"
 
 namespace fa {
     export interface Result<C, R> {
@@ -16,7 +13,7 @@ namespace fa {
         readonly done?: () => R|void
     }
     export const applyState = <C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> =>
-        iterable(function *() {
+        iterator.iterable(function *() {
             for (const c of input) {
                 if (state.next === undefined) {
                     break
@@ -39,7 +36,9 @@ namespace fa {
             }
         })
     export const nextState = <C, R>(
-        result: ReadonlyArray<R>, state: State<C, R>, c: C
+        result: ReadonlyArray<R>,
+        state: State<C, R>,
+        c: C
     ): Result<C, R> => {
         if (state.next === undefined) {
             return { result, state }
@@ -57,13 +56,13 @@ namespace fa {
 
 interface CharAndPosition {
     readonly c: string
-    readonly position: FilePosition
+    readonly position: sourceMap.FilePosition
 }
 
 export const addPosition = (s: string): Iterable<CharAndPosition> => {
     let line = 1
     let column = 1
-    return map(s, c => {
+    return iterator.map(s, c => {
         const result = { c, position: { line, column } }
         if (c === "\n") {
             ++line
@@ -75,58 +74,42 @@ export const addPosition = (s: string): Iterable<CharAndPosition> => {
     })
 }
 
-namespace symbol {
-    export type Type = "{"|"}"|"["|"]"|","|":"
-    const set = new Set(["{", "}", "[", "]", ",", ":"])
-    export const is = (c: string): c is Type => set.has(c)
+namespace set {
+    export const create = <T extends string>(v: ReadonlyArray<T>) => new Set<T>(v)
+    export const isElement = <T extends string>(set: Set<T>, c: string): c is T => set.has(c as T)
+    export type GetElementType<T extends Set<string>> = T extends Set<infer U> ? U : string
 }
 
-namespace whiteSpace {
-    export type Type = " "|"\t"|"\r"|"\n"
-    const set = new Set([" ", "\t", "\r", "\n"])
-    export const is = (c: string): c is Type => set.has(c)
-}
-
-namespace jsonValue {
-    export type Type =
-        "a"|"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|
-        "k"|"l"|"m"|"n"|"o"|"p"|"q"|"r"|"s"|"t"|
-        "u"|"v"|"w"|"x"|"y"|"z"|
-        "A"|"B"|"C"|"D"|"E"|"F"|"G"|"H"|"I"|"J"|
-        "K"|"L"|"M"|"N"|"O"|"P"|"Q"|"R"|"S"|"T"|
-        "U"|"V"|"W"|"X"|"Y"|"Z"|
-        "_"|"+"|"-"|"."|
-        "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"
-    const set = new Set([
-        "a","b","c","d","e","f","g","h","i","j",
-        "k","l","m","n","o","p","q","r","s","t",
-        "u","v","w","x","y","z",
-        "A","B","C","D","E","F","G","H","I","J",
-        "K","L","M","N","O","P","Q","R","S","T",
-        "U","V","W","X","Y","Z",
-        "_","+","-",".",
-        "0","1","2","3","4","5","6","7","8","9"
-    ])
-    export const is = (c: string): c is Type => set.has(c)
-}
+const symbol = set.create(["{", "}", "[", "]", ",", ":"])
+const whiteSpace = set.create([" ", "\t", "\r", "\n"])
+const jsonValue = set.create([
+    "a","b","c","d","e","f","g","h","i","j",
+    "k","l","m","n","o","p","q","r","s","t",
+    "u","v","w","x","y","z",
+    "A","B","C","D","E","F","G","H","I","J",
+    "K","L","M","N","O","P","Q","R","S","T",
+    "U","V","W","X","Y","Z",
+    "_","+","-",".",
+    "0","1","2","3","4","5","6","7","8","9"
+])
 
 interface JsonTokenBase {
-    readonly position: FilePosition
+    readonly position: sourceMap.FilePosition
 }
 
 interface JsonSymbolToken extends JsonTokenBase {
-    readonly kind: symbol.Type
+    readonly kind: set.GetElementType<typeof symbol>
 }
 
 interface JsonValueToken extends JsonTokenBase {
     readonly kind: "value"
-    readonly value: JsonPrimitive
+    readonly value: json.JsonPrimitive
 }
 
 type JsonToken = JsonSymbolToken|JsonValueToken
 
 export interface ErrorBase {
-    readonly position: FilePosition
+    readonly position: sourceMap.FilePosition
     readonly token: string
     readonly message: string
     readonly url: string
@@ -160,7 +143,7 @@ const isControl = (c: string): boolean => {
     return code <= 0x1F || code === 0x7F
 }
 
-type EscapeMap = StringMap<string>
+type EscapeMap = stringMap.StringMap<string>
 
 const escapeMap: EscapeMap = {
     "\"": "\"",
@@ -173,7 +156,7 @@ const escapeMap: EscapeMap = {
     "n": "\n",
 }
 
-type HexMap = StringMap<number>
+type HexMap = stringMap.StringMap<number>
 
 const hexMap: HexMap = {
     "0": 0,
@@ -212,7 +195,7 @@ export const tokenize = (
 
     type State = fa.State<CharAndPosition, JsonToken>
 
-    const report = (position: FilePosition, token: string, code: SyntaxErrorCode) =>
+    const report = (position: sourceMap.FilePosition, token: string, code: SyntaxErrorCode) =>
         reportError({
             kind: "syntax",
             code,
@@ -227,13 +210,13 @@ export const tokenize = (
             if (cp.c === "\"") {
                 return { state: stringState(cp.position) }
             }
-            if (symbol.is(cp.c)) {
+            if (set.isElement(symbol, cp.c)) {
                 return { result: [{ kind: cp.c, position: cp.position }] }
             }
-            if (jsonValue.is(cp.c)) {
+            if (set.isElement(jsonValue, cp.c)) {
                 return { state: jsonValueState(cp) }
             }
-            if (!whiteSpace.is(cp.c)) {
+            if (!set.isElement(whiteSpace, cp.c)) {
                 report(cp.position, cp.c, "invalid symbol")
             }
             return
@@ -241,7 +224,7 @@ export const tokenize = (
     }
 
 
-    const stringState = (position: FilePosition): State => {
+    const stringState = (position: sourceMap.FilePosition): State => {
         let value = ""
 
         const getResult = (): JsonToken => ({ kind: "value", value, position })
@@ -340,7 +323,7 @@ export const tokenize = (
 
         return {
             next: cp => {
-                if (jsonValue.is(cp.c)) {
+                if (set.isElement(jsonValue, cp.c)) {
                     value += cp.c
                     return
                 }
@@ -357,11 +340,11 @@ export const parse = (
     url: string,
     context: string,
     reportError: ReportError = defaultErrorReport
-): Json => {
+): json.Json => {
 
     type State = fa.State<JsonToken, never>
 
-    const report = (position: FilePosition, token: string, code: StructureErrorCode) =>
+    const report = (position: sourceMap.FilePosition, token: string, code: StructureErrorCode) =>
         reportError({
             kind: "structure",
             code,
@@ -385,13 +368,13 @@ export const parse = (
         }
     }
 
-    interface ObjectOrArrayState<T extends JsonRef> {
+    interface ObjectOrArrayState<T extends json.JsonRef> {
         readonly state: State
-        readonly value: Tracked<T>
-        readonly primitiveProperties: MutableStringMap<FilePosition>
+        readonly value: sourceMap.Tracked<T>
+        readonly primitiveProperties: stringMap.MutableStringMap<sourceMap.FilePosition>
     }
 
-    const objectState = (os: ObjectOrArrayState<MutableJsonObject>): State => {
+    const objectState = (os: ObjectOrArrayState<json.MutableJsonObject>): State => {
 
         const separatorState: State = {
             next: t => {
@@ -412,7 +395,7 @@ export const parse = (
                             separatorState,
                             (v, position, primitiveProperties) => {
                                 os.value[name] = v
-                                if (isPrimitive(v)) {
+                                if (json.isPrimitive(v)) {
                                     os.primitiveProperties[name] = position
                                 }
                                 return {
@@ -459,7 +442,7 @@ export const parse = (
         }
     }
 
-    const arrayState = (as: ObjectOrArrayState<MutableJsonArray>): State => {
+    const arrayState = (as: ObjectOrArrayState<json.MutableJsonArray>): State => {
 
         const separatorState: State = {
             next: t => {
@@ -476,7 +459,7 @@ export const parse = (
             separatorState,
             (v, position, primitiveProperties) => {
                 const property = as.value.push(v) - 1
-                if (isPrimitive(v)) {
+                if (json.isPrimitive(v)) {
                     as.primitiveProperties[property] = position
                 }
                 return {
@@ -502,26 +485,26 @@ export const parse = (
     const valueState = (
         state: State,
         set: (
-            v: Json,
-            position: FilePosition,
-            primitiveProperties: StringMap<FilePosition>
-        ) => ObjectInfo,
+            v: json.Json,
+            position: sourceMap.FilePosition,
+            primitiveProperties: stringMap.StringMap<sourceMap.FilePosition>
+        ) => sourceMap.ObjectInfo,
     ): State => ({
         next: t => {
-            const updateRef = <T extends MutableJsonRef>(value: T): ObjectOrArrayState<T> => {
-                const primitiveProperties: MutableStringMap<FilePosition> = {}
+            const updateRef = <T extends json.MutableJsonRef>(value: T): ObjectOrArrayState<T> => {
+                const primitiveProperties: stringMap.MutableStringMap<sourceMap.FilePosition> = {}
                 const info = set(value, t.position, primitiveProperties)
-                return { state, value: setInfo(value, info), primitiveProperties }
+                return { state, value: sourceMap.setInfo(value, info), primitiveProperties }
             }
             switch (t.kind) {
                 case "value":
                     set(t.value, t.position, {})
                     return { state }
                 case "{":
-                    const objectRef = updateRef<MutableJsonObject>({})
+                    const objectRef = updateRef<json.MutableJsonObject>({})
                     return { state: objectState(objectRef) }
                 case "[":
-                    const arrayRef = updateRef<MutableJsonArray>([])
+                    const arrayRef = updateRef<json.MutableJsonArray>([])
                     return { state: arrayState(arrayRef) }
             }
             reportToken(t, "unexpected token")
@@ -530,8 +513,8 @@ export const parse = (
     })
 
     const tokens = tokenize(context, reportError, url)
-    let value: Json|undefined
-    toArray(fa.applyState(
+    let value: json.Json|undefined
+    iterator.toArray(fa.applyState(
         tokens,
         valueState(
             endState,

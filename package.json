@@ -9,6 +9,13 @@
     "test": "tsc && nyc mocha dist/test/*.js",
     "prepack": "npm install && tsc"
   },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/index.js.map",
+    "dist/index.d.ts.map",
+    "src/index.ts"
+  ],
   "nyc": {
     "reporter": [
       "lcov",
@@ -18,13 +25,6 @@
       "dist/*.js"
     ]
   },
-  "files": [
-    "dist/index.d.ts",
-    "dist/index.d.ts.map",
-    "dist/index.js",
-    "dist/index.js.map",
-    "src/index.ts"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ts-common/json-parser.git"
