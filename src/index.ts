@@ -5,7 +5,7 @@ import * as stringMap from "@ts-common/string-map"
 
 namespace fa {
     export interface Result<C, R> {
-        readonly result?: ReadonlyArray<R>
+        readonly result?: readonly R[]
         readonly state?: State<C, R>
     }
     export interface State<C, R> {
@@ -36,7 +36,7 @@ namespace fa {
             }
         })
     export const nextState = <C, R>(
-        result: ReadonlyArray<R>,
+        result: readonly R[],
         state: State<C, R>,
         c: C
     ): Result<C, R> => {
@@ -75,7 +75,7 @@ export const addPosition = (s: string): Iterable<CharAndPosition> => {
 }
 
 namespace set {
-    export const create = <T extends string>(v: ReadonlyArray<T>) => new Set<T>(v)
+    export const create = <T extends string>(v: readonly T[]) => new Set<T>(v)
     export const isElement = <T extends string>(set: Set<T>, c: string): c is T => set.has(c as T)
     export type GetElementType<T extends Set<string>> = T extends Set<infer U> ? U : string
 }
