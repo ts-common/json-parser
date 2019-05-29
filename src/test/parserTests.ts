@@ -1,5 +1,4 @@
-import "mocha"
-import { assert } from "chai"
+import * as assert from "assert"
 import { parse, ParseError } from "../index"
 import { getInfo, objectInfoSymbol } from '@ts-common/source-map';
 import { JsonArray } from '@ts-common/json';
@@ -13,7 +12,7 @@ describe("parse", () => {
             "",
             e => errors.push(e)
         )
-        assert.isNull(json)
+        assert.strictEqual(json, null)
         assert.equal(errors.length, 1)
         const x = errors[0]
         assert.equal(x.code, "unexpected end of file")
@@ -26,7 +25,7 @@ describe("parse", () => {
             "null",
             e => errors.push(e)
         )
-        assert.isNull(json)
+        assert.strictEqual(json, null)
         assert.equal(errors.length, 0)
     })
     it("number", () => {
@@ -183,7 +182,7 @@ describe("parse", () => {
             e => errors.push(e)
         )
         assert.deepEqual(json, {})
-        assert.isTrue(errors.length > 0)
+        assert.strictEqual(errors.length > 0, true)
     })
     it("invalid property name", () => {
         const errors: Array<ParseError> = []
@@ -193,7 +192,7 @@ describe("parse", () => {
             e => errors.push(e)
         )
         assert.deepEqual(json, {})
-        assert.isTrue(errors.length > 0)
+        assert.strictEqual(errors.length > 0, true)
     })
     it("strange property name", () => {
         const errors: Array<ParseError> = []

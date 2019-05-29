@@ -1,5 +1,4 @@
-import "mocha"
-import { assert } from "chai"
+import * as assert from "assert"
 import { tokenize, ParseError } from "../index"
 import { toArray } from "@ts-common/iterator"
 
@@ -7,13 +6,13 @@ describe("tokenize", () => {
     it("empty", () => {
         const errors: ParseError[] = []
         const result = toArray(tokenize("", e => errors.push(e), "url")) as any[]
-        assert.sameMembers(result, [])
+        assert.deepStrictEqual(result, [])
         assert.equal(errors.length, 0)
     })
     it("spaces", () => {
         const errors: ParseError[] = []
         const result = toArray(tokenize("   \t\n   ", e => errors.push(e), "url")) as any[]
-        assert.sameMembers(result, [])
+        assert.deepStrictEqual(result, [])
         assert.equal(errors.length, 0)
     })
     it("string", () => {
@@ -29,6 +28,7 @@ describe("tokenize", () => {
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 2)
         assert.equal(errors.length, 0)
+        return
     })
     it("stringEscape", () => {
         const errors: ParseError[] = []
@@ -42,6 +42,7 @@ describe("tokenize", () => {
         assert.equal(token.position.line, 2)
         assert.equal(token.position.column, 3)
         assert.equal(errors.length, 0)
+        return
     })
     it("stringUnicodeEscape", () => {
         const errors: ParseError[] = []
@@ -55,6 +56,7 @@ describe("tokenize", () => {
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 1)
         assert.equal(errors.length, 0)
+        return
     })
     it("invalidUnicodeEscape", () => {
         const errors: ParseError[] = []
@@ -69,6 +71,7 @@ describe("tokenize", () => {
         assert.equal(token.position.column, 1)
         assert.equal(errors.length, 1)
         assert.deepStrictEqual(errors[0].url, "someurl.json")
+        return
     })
     it("unexpectedUnicodeEscapeEnd", () => {
         const errors: ParseError[] = []
@@ -82,6 +85,7 @@ describe("tokenize", () => {
         assert.equal(token.position.line, 1)
         assert.equal(token.position.column, 1)
         assert.equal(errors.length, 1)
+        return
     })
     it("symbol", () => {
         const errors: ParseError[] = []
@@ -103,15 +107,16 @@ describe("tokenize", () => {
         }
         assert.equal(token0.position.line, 3)
         assert.equal(token0.position.column, 5)
-        assert.isTrue(token0.value)
+        assert.strictEqual(token0.value, true)
         const token1 = result[1]
         if (token1.kind !== "value") {
             return assert.fail()
         }
         assert.equal(token1.position.line, 3)
         assert.equal(token1.position.column, 11)
-        assert.isFalse(token1.value)
+        assert.strictEqual(token1.value, false)
         assert.equal(errors.length, 0)
+        return
     })
     it("symbol and numbers", () => {
         const errors: ParseError[] = []
@@ -136,6 +141,7 @@ describe("tokenize", () => {
         assert.equal(token2.position.column, 6)
         assert.equal(token2.value, 56.78)
         assert.equal(errors.length, 0)
+        return
     })
     it("null and string", () => {
         const errors: ParseError[] = []
@@ -147,7 +153,7 @@ describe("tokenize", () => {
         }
         assert.equal(token0.position.line, 1)
         assert.equal(token0.position.column, 1)
-        assert.isNull(token0.value)
+        assert.strictEqual(token0.value, null)
         const token1 = result[1]
         if (token1.kind !== "value") {
             return assert.fail()
@@ -156,6 +162,7 @@ describe("tokenize", () => {
         assert.equal(token1.position.column, 5)
         assert.equal(token1.value, "-234")
         assert.equal(errors.length, 0)
+        return
     })
     it("invalid number", () => {
         const errors: ParseError[] = []
@@ -172,6 +179,7 @@ describe("tokenize", () => {
         assert.equal(token0.value, "-+123e+56")
 
         assert.equal(errors.length, 1)
+        return
     })
     it("control character", () => {
         const errors: ParseError[] = []
@@ -188,6 +196,7 @@ describe("tokenize", () => {
         assert.equal(token0.value, "\n")
 
         assert.equal(errors.length, 1)
+        return
     })
     it("invalid escape", () => {
         const errors: ParseError[] = []
@@ -204,6 +213,7 @@ describe("tokenize", () => {
         assert.equal(token0.value, "a")
 
         assert.equal(errors.length, 1)
+        return
     })
     it("end of file", () => {
         const errors: ParseError[] = []
@@ -220,6 +230,7 @@ describe("tokenize", () => {
         assert.equal(token0.value, "xyz")
 
         assert.equal(errors.length, 1)
+        return
     })
     it("invalid symbol", () => {
         const errors: ParseError[] = []
