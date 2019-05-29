@@ -22,7 +22,7 @@ type TrackedJsonArray = {
 } & TrackedJsonCommon
 
 type TrackedJsonPrimitive = {
-  kind: "string"|"number"|"null"
+  kind: "string"|"number"|"null"|"boolean"
 } & TrackedJsonCommon
 
 type TrackedJson = TrackedJsonObject|TrackedJsonArray|TrackedJsonPrimitive
