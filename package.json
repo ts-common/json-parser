@@ -1,12 +1,12 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "JSON Parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "tsc": "tsc",
-    "test": "tsc && nyc mocha dist/test/*.js",
+    "test": "tsc && jest",
     "prepack": "npm install && tsc"
   },
   "files": [
@@ -16,18 +16,36 @@
     "dist/index.d.ts.map",
     "src/index.ts"
   ],
-  "nyc": {
-    "reporter": [
-      "lcov",
-      "text"
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/dist/test/*Tests.js"
     ],
-    "include": [
-      "dist/*.js"
+    "reporters": [
+      "jest-junit",
+      "default"
+    ],
+    "collectCoverage": true,
+    "coverageThreshold": {
+      "global": {
+        "branches": 93.33,
+        "functions": 97.73,
+        "lines": 99.49,
+        "statements": 99.02
+      }
+    },
+    "coveragePathIgnorePatterns": [
+      "/dist/test/"
+    ],
+    "coverageReporters": [
+      "cobertura",
+      "text",
+      "html"
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ts-common/json-parser.git"
+  "jest-junit": {
+    "outputDirectory": ".",
+    "outputName": "test-results.xml"
   },
   "keywords": [
     "json",
@@ -40,17 +58,15 @@
   },
   "homepage": "https://github.com/ts-common/json-parser#readme",
   "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/mocha": "^5.2.6",
+    "@types/jest": "^24.0.13",
     "@types/node": "^10.12.18",
-    "chai": "^4.2.0",
-    "mocha": "^6.0.2",
-    "nyc": "^13.3.0",
-    "typescript": "^3.4.1"
+    "jest": "^24.8.0",
+    "jest-junit": "^6.4.0",
+    "typescript": "^3.4.5"
   },
   "dependencies": {
-    "@ts-common/iterator": "^0.3.0",
-    "@ts-common/json": "^0.3.0",
+    "@ts-common/iterator": "^0.3.4",
+    "@ts-common/json": "^0.3.1",
     "@ts-common/source-map": "^0.5.0",
     "@ts-common/string-map": "^0.3.0",
     "tslib": "^1.9.3"

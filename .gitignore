@@ -65,3 +65,4 @@ typings/
 *.map
 .vs
 package-lock.json
+test-results.xml
