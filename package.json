@@ -1,12 +1,12 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "JSON Parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "tsc": "tsc",
-    "test": "tsc && jest",
+    "test": "tsc && jest --verbose",
     "prepack": "npm install && tsc"
   },
   "files": [
@@ -30,8 +30,8 @@
       "global": {
         "branches": 93.33,
         "functions": 97.73,
-        "lines": 99.49,
-        "statements": 99.02
+        "lines": 99.48,
+        "statements": 98.99
       }
     },
     "coveragePathIgnorePatterns": [
@@ -62,7 +62,7 @@
     "@types/node": "^10.12.18",
     "jest": "^24.8.0",
     "jest-junit": "^6.4.0",
-    "typescript": "^3.4.5"
+    "typescript": "^3.5.1"
   },
   "dependencies": {
     "@ts-common/iterator": "^0.3.4",

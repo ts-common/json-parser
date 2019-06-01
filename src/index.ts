@@ -12,7 +12,7 @@ namespace fa {
         readonly next?: (c: C) => Result<C, R>|void
         readonly done?: () => R|void
     }
-    export const applyState = <C, R>(input: Iterable<C>, state: State<C, R>): Iterable<R> =>
+    export const applyState = <C, R>(input: iterator.Iterable<C>, state: State<C, R>): iterator.IterableEx<R> =>
         iterator.iterable(function *() {
             for (const c of input) {
                 if (state.next === undefined) {
@@ -59,20 +59,25 @@ interface CharAndPosition {
     readonly position: sourceMap.FilePosition
 }
 
-export const addPosition = (s: string): Iterable<CharAndPosition> => {
-    let line = 1
-    let column = 1
-    return iterator.map(s, c => {
-        const result = { c, position: { line, column } }
-        if (c === "\n") {
-            ++line
-            column = 1
-        } else {
-            ++column
+const charAndPosition = {
+    initial: { c: "", position: { line: 1, column: 0 } },
+    next: (prev: CharAndPosition, c: string): CharAndPosition => {
+        const { line, column } = prev.position
+        return {
+            c,
+            position: prev.c === "\n" ? { line: line + 1, column: 1 } : { line, column: column + 1 }
         }
-        return result
-    })
-}
+    }
+} as const
+
+export const addPosition = (s: string): iterator.IterableEx<CharAndPosition> =>
+    iterator
+        .scan(
+            s,
+            charAndPosition.next,
+            charAndPosition.initial,
+        )
+        .drop()
 
 namespace set {
     export const create = <T extends string>(v: readonly T[]) => new Set<T>(v)
@@ -116,9 +121,9 @@ export interface ErrorBase {
 }
 
 export type SyntaxErrorCode =
-    "invalid token"|
-    "invalid symbol"|
-    "invalid escape symbol"|
+    "invalid token" |
+    "invalid symbol" |
+    "invalid escape symbol" |
     "unexpected end of string"
 
 export interface SyntaxError extends ErrorBase {
@@ -191,7 +196,7 @@ export const tokenize = (
     s: string,
     reportError: ReportError = defaultErrorReport,
     url: string,
-): Iterable<JsonToken> => {
+): iterator.IterableEx<JsonToken> => {
 
     type State = fa.State<CharAndPosition, JsonToken>
 
@@ -205,7 +210,7 @@ export const tokenize = (
             url,
         })
 
-    const whiteSpaceState: State ={
+    const whiteSpaceState: State = {
         next: cp => {
             if (cp.c === "\"") {
                 return { state: stringState(cp.position) }
@@ -514,7 +519,7 @@ export const parse = (
 
     const tokens = tokenize(context, reportError, url)
     let value: json.Json|undefined
-    iterator.toArray(fa.applyState(
+    fa.applyState(
         tokens,
         valueState(
             endState,
@@ -528,7 +533,7 @@ export const parse = (
                 }
             }
         )
-    ))
+    ).toArray()
     if (value === undefined) {
         report({ line: 1, column: 1 }, "", "unexpected end of file")
         return null
