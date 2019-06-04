@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "JSON Parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,10 +28,10 @@
     "collectCoverage": true,
     "coverageThreshold": {
       "global": {
-        "branches": 93.33,
-        "functions": 97.73,
-        "lines": 99.48,
-        "statements": 98.99
+        "branches": 93.18,
+        "functions": 97.62,
+        "lines": 99.47,
+        "statements": 98.97
       }
     },
     "coveragePathIgnorePatterns": [
@@ -65,7 +65,8 @@
     "typescript": "^3.5.1"
   },
   "dependencies": {
-    "@ts-common/iterator": "^0.3.4",
+    "@ts-common/add-position": "0.0.2",
+    "@ts-common/iterator": "^0.3.5",
     "@ts-common/json": "^0.3.1",
     "@ts-common/source-map": "^0.5.0",
     "@ts-common/string-map": "^0.3.0",
