@@ -2,6 +2,7 @@ import * as json from "@ts-common/json"
 import * as iterator from "@ts-common/iterator"
 import * as sourceMap from "@ts-common/source-map"
 import * as stringMap from "@ts-common/string-map"
+import * as addPosition from "@ts-common/add-position"
 
 namespace fa {
     export interface Result<C, R> {
@@ -53,31 +54,6 @@ namespace fa {
         }
     }
 }
-
-interface CharAndPosition {
-    readonly c: string
-    readonly position: sourceMap.FilePosition
-}
-
-const charAndPosition = {
-    initial: { c: "", position: { line: 1, column: 0 } },
-    next: (prev: CharAndPosition, c: string): CharAndPosition => {
-        const { line, column } = prev.position
-        return {
-            c,
-            position: prev.c === "\n" ? { line: line + 1, column: 1 } : { line, column: column + 1 }
-        }
-    }
-} as const
-
-export const addPosition = (s: string): iterator.IterableEx<CharAndPosition> =>
-    iterator
-        .scan(
-            s,
-            charAndPosition.next,
-            charAndPosition.initial,
-        )
-        .drop()
 
 namespace set {
     export const create = <T extends string>(v: readonly T[]) => new Set<T>(v)
@@ -198,7 +174,7 @@ export const tokenize = (
     url: string,
 ): iterator.IterableEx<JsonToken> => {
 
-    type State = fa.State<CharAndPosition, JsonToken>
+    type State = fa.State<addPosition.CharAndPosition, JsonToken>
 
     const report = (position: sourceMap.FilePosition, token: string, code: SyntaxErrorCode) =>
         reportError({
@@ -303,7 +279,7 @@ export const tokenize = (
         return state
     }
 
-    const jsonValueState = (prior: CharAndPosition): State => {
+    const jsonValueState = (prior: addPosition.CharAndPosition): State => {
         let value = prior.c
 
         const getResultValue = () => {
@@ -338,7 +314,7 @@ export const tokenize = (
         }
     }
 
-    return fa.applyState(addPosition(s), whiteSpaceState)
+    return fa.applyState(addPosition.addPosition(s), whiteSpaceState)
 }
 
 export const parse = (
