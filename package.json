@@ -61,14 +61,15 @@
   },
   "homepage": "https://github.com/ts-common/json-parser#readme",
   "devDependencies": {
-    "@types/jest": "^24.0.13",
+    "@types/jest": "^24.9.0",
     "@types/node": "^10.12.18",
     "jest": "^24.8.0",
     "jest-junit": "^6.4.0",
     "prettier": "1.19.1",
     "tslint": "^5.20.1",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "3.5.1"
+    "typescript": "3.5.1",
+    "ts-jest": "^24.3.0"
   },
   "dependencies": {
     "@ts-common/add-position": "0.0.2",
