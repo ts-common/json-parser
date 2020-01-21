@@ -7,7 +7,10 @@
   "scripts": {
     "tsc": "tsc",
     "test": "tsc && jest --verbose",
-    "prepack": "npm install && tsc"
+    "prepack": "npm install && tsc",
+    "scripts": {
+      "tslint-check": "tslint-config-prettier-check ./tslint.json"
+    }
   },
   "files": [
     "dist/index.js",
@@ -62,7 +65,9 @@
     "@types/node": "^10.12.18",
     "jest": "^24.8.0",
     "jest-junit": "^6.4.0",
+    "prettier": "1.19.1",
     "tslint": "^5.20.1",
+    "tslint-config-prettier": "^1.18.0",
     "typescript": "3.5.1"
   },
   "dependencies": {
