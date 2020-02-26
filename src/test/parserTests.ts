@@ -223,4 +223,20 @@ describe("parse", () => {
     assert.equal(errors[0].code, "unexpected end of file");
     assert.equal(errors[0].token, "]");
   });
+
+  it("missing curly brace in array", () => {
+    const errors: ParseError[] = []
+    parse("fakeurl.json", `[1, 2, { "a": 1 ]`, e=>{
+      errors.push(e)
+    })
+    assert.equal(errors.length, 2)
+    assert.deepEqual(errors[0].code, 'unexpected token')
+    assert.deepEqual(errors[1].code, 'unexpected end of file')
+  });
+
+  it("valid array", ()=>{
+    parse("fakeurl.json", `[1, 2, { "a": 1 }]`, e=>{
+      throw e
+    }) 
+  })
 });
