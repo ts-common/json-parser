@@ -377,7 +377,8 @@ export const parse = (
   }
 
   const objectState = (
-    os: ObjectOrArrayState<json.MutableJsonObject>
+    os: ObjectOrArrayState<json.MutableJsonObject>,
+    position: sourceMap.FilePosition
   ): State => {
     const separatorState: State = {
       next: t => {
@@ -389,6 +390,12 @@ export const parse = (
         }
         reportToken(t, "unexpected token");
         return;
+      },
+      done: () => {
+        reportToken(
+          { kind: "}", position: position },
+          "unexpected end of file"
+        );
       }
     };
 
@@ -445,11 +452,20 @@ export const parse = (
         return propertyState.next === undefined
           ? undefined
           : propertyState.next(t);
+      },
+      done: () => {
+        reportToken(
+          { kind: "}", position: position },
+          "unexpected end of file"
+        );
       }
     };
   };
 
-  const arrayState = (as: ObjectOrArrayState<json.MutableJsonArray>): State => {
+  const arrayState = (
+    as: ObjectOrArrayState<json.MutableJsonArray>,
+    position: sourceMap.FilePosition
+  ): State => {
     const separatorState: State = {
       next: t => {
         switch (t.kind) {
@@ -460,6 +476,12 @@ export const parse = (
         }
         reportToken(t, "unexpected token");
         return;
+      },
+      done: () => {
+        reportToken(
+          { kind: "]", position: position },
+          "unexpected end of file"
+        );
       }
     };
 
@@ -486,6 +508,12 @@ export const parse = (
           return { state: as.state };
         }
         return itemState.next !== undefined ? itemState.next(t) : undefined;
+      },
+      done: () => {
+        reportToken(
+          { kind: "]", position: position },
+          "unexpected end of file"
+        );
       }
     };
   };
@@ -517,10 +545,10 @@ export const parse = (
           return { state };
         case "{":
           const objectRef = updateRef<json.MutableJsonObject>({});
-          return { state: objectState(objectRef) };
+          return { state: objectState(objectRef, t.position) };
         case "[":
           const arrayRef = updateRef<json.MutableJsonArray>([]);
-          return { state: arrayState(arrayRef) };
+          return { state: arrayState(arrayRef, t.position) };
       }
       reportToken(t, "unexpected token");
       return;

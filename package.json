@@ -1,6 +1,6 @@
 {
   "name": "@ts-common/json-parser",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "JSON Parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,9 +8,7 @@
     "tsc": "tsc",
     "test": "tsc && jest --verbose",
     "prepack": "npm install && tsc",
-    "scripts": {
-      "tslint-check": "tslint-config-prettier-check ./tslint.json"
-    }
+    "tslint-check": "tslint-config-prettier-check ./tslint.json"
   },
   "files": [
     "dist/index.js",
@@ -31,10 +29,10 @@
     "collectCoverage": true,
     "coverageThreshold": {
       "global": {
-        "branches": 93.18,
-        "functions": 97.62,
-        "lines": 98.95,
-        "statements": 98.97
+        "branches": 94,
+        "functions": 95,
+        "lines": 98,
+        "statements": 98
       }
     },
     "coveragePathIgnorePatterns": [
@@ -61,11 +59,12 @@
   },
   "homepage": "https://github.com/ts-common/json-parser#readme",
   "devDependencies": {
-    "@types/jest": "^24.0.13",
+    "@types/jest": "^24.9.0",
     "@types/node": "^10.12.18",
     "jest": "^24.8.0",
     "jest-junit": "^6.4.0",
     "prettier": "1.19.1",
+    "ts-jest": "^24.3.0",
     "tslint": "^5.20.1",
     "tslint-config-prettier": "^1.18.0",
     "typescript": "3.5.1"

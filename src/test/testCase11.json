@@ -1,0 +1,10 @@
+{
+    "user": {
+        "name": "bob",
+        "jobInfo": {
+            "address": "Shanghai",
+            "title": "software engineer"
+            
+            ,"age": 30
+    }
+}
