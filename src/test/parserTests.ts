@@ -185,55 +185,54 @@ describe("parse", () => {
       throw e;
     });
   });
-  it("missing curly brace testCase 10", () => {
-    const url = "./src/test/testCase10.json";
-    const errors: ParseError[] = [];
-    const context = fs.readFileSync(url).toString();
-    parse(url, context, e => {
-      errors.push(e);
-    });
-    assert.equal(errors.length, 1);
-    assert.equal(errors[0].code, "unexpected end of file");
-  });
-  it("json object missing curly brace", () => {
-    const errors: ParseError[] = [];
-    parse("fakeurl.json", "{", e => {
-      errors.push(e);
-    });
-    assert.equal(errors.length, 1);
-    assert.equal(errors[0].code, "unexpected end of file");
-    assert.equal(errors[0].token, "}");
-  });
-  it("json object missing middle curly brace", () => {
-    const url = "./src/test/testCase11.json";
-    const errors: ParseError[] = [];
-    const context = fs.readFileSync(url).toString();
-    parse(url, context, e => {
-      errors.push(e);
-    });
-    assert.equal(errors.length, 1);
-    assert.equal(errors[0].code, 'unexpected end of file')
-  });
-  it("json array missing bracket ", () => {
-    const errors: ParseError[] = [];
-    parse("fakeurl.json", "[", e => {
-      errors.push(e);
-    });
-    assert.equal(errors.length, 1);
-    assert.equal(errors[0].code, "unexpected end of file");
-    assert.equal(errors[0].token, "]");
-  });
+  it("missing curly brace testCase 10", () => {	
+    const url = "./src/test/testCase10.json";	
+    const errors: ParseError[] = [];	
+    const context = fs.readFileSync(url).toString();	
+    parse(url, context, e => {	
+      errors.push(e);	
+    });	
+    assert.equal(errors.length, 1);	
+    assert.equal(errors[0].code, "unexpected end of file");	
+  });	
+  it("json object missing curly brace", () => {	
+    const errors: ParseError[] = [];	
+    parse("fakeurl.json", "{", e => {	
+      errors.push(e);	
+    });	
+    assert.equal(errors.length, 1);	
+    assert.equal(errors[0].code, "unexpected end of file");	
+    assert.equal(errors[0].token, "}");	
+  });	
+  it("json object missing middle curly brace", () => {	
+    const url = "./src/test/testCase11.json";	
+    const errors: ParseError[] = [];	
+    const context = fs.readFileSync(url).toString();	
+    parse(url, context, e => {	
+      errors.push(e);	
+    });	
+    assert.equal(errors.length, 1);	
+    assert.equal(errors[0].code, 'unexpected end of file')	
+  });	
+  it("json array missing bracket ", () => {	
+    const errors: ParseError[] = [];	
+    parse("fakeurl.json", "[", e => {	
+      errors.push(e);	
+    });	
+    assert.equal(errors.length, 1);	
+    assert.equal(errors[0].code, "unexpected end of file");	
+    assert.equal(errors[0].token, "]");	
+  });	
 
-  it("missing curly brace in array", () => {
-    const errors: ParseError[] = []
-    parse("fakeurl.json", `[1, 2, { "a": 1 ]`, e=>{
-      errors.push(e)
-    })
-    assert.equal(errors.length, 2)
-    assert.deepEqual(errors[0].code, 'unexpected token')
-    assert.deepEqual(errors[1].code, 'unexpected end of file')
+  it("missing curly brace in array", () => {	
+    const errors: ParseError[] = []	
+    parse("fakeurl.json", `[1, 2, { "a": 1 ]`, e=>{	
+      errors.push(e)	
+    })	
+    assert.equal(errors.length, 2)	
+    assert.deepEqual(errors[0].code, 'unexpected token')	
+    assert.deepEqual(errors[1].code, 'unexpected end of file')	
   });
-
   it("valid array", ()=>{
     parse("fakeurl.json", `[1, 2, { "a": 1 }]`, e=>{
       throw e

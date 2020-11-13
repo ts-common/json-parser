@@ -15,7 +15,7 @@ namespace fa {
     readonly done?: () => R | void;
   }
   export const applyState = <C, R>(
-    input: iterator.Iterable<C>,
+    input: Iterable<C>,
     state: State<C, R>
   ): iterator.IterableEx<R> =>
     iterator.iterable(function*() {
@@ -39,7 +39,7 @@ namespace fa {
           yield r;
         }
       }
-    });
+    } as any);
   export const nextState = <C, R>(
     result: readonly R[],
     state: State<C, R>,
@@ -69,7 +69,7 @@ namespace setUtil {
 }
 
 const symbol = setUtil.create(["{", "}", "[", "]", ",", ":"]);
-const whiteSpace = setUtil.create([" ", "\t", "\r", "\n"]);
+const whiteSpace = setUtil.create([" ", "\t", "\r", "\n", ""]);
 const jsonValue = setUtil.create(
   // prettier-ignore
   [ "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",

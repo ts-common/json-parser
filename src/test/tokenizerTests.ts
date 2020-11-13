@@ -74,19 +74,19 @@ describe("tokenize", () => {
         return;
     });
     it("unexpectedUnicodeEscapeEnd", () => {
-        const errors: ParseError[] = [];
-        const result = toArray(tokenize("\"\\u0", (e) => errors.push(e), "url"));
-        assert.equal(result.length, 1);
-        const token = result[0];
+        const errors: ParseError[] = []
+        const result = toArray(tokenize("\"\\u0", e => errors.push(e), "url"))
+        assert.equal(result.length, 1)
+        const token = result[0]
         if (token.kind !== "value") {
-            return assert.fail();
+            return assert.fail()
         }
-        assert.equal(token.value, "");
-        assert.equal(token.position.line, 1);
-        assert.equal(token.position.column, 1);
-        assert.equal(errors.length, 1);
-        return;
-    });
+        assert.equal(token.value, "")
+        assert.equal(token.position.line, 1)
+        assert.equal(token.position.column, 1)
+        assert.equal(errors.length, 2)
+        return
+    })
     it("symbol", () => {
         const errors: ParseError[] = [];
         const result = toArray(tokenize(" \r\n\t  {   ", (e) => errors.push(e), "url"));
