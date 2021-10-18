@@ -48,6 +48,10 @@
     "outputDirectory": ".",
     "outputName": "test-results.xml"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ts-common/json-parser.git"
+  },
   "keywords": [
     "json",
     "parser"
